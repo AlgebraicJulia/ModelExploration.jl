@@ -1,0 +1,7 @@
+name = "ModelExploration"
+uuid = "ee4b7b2d-0795-4448-a530-9f52182b79fb"
+authors = ["Kris <ksb@stanford.edu>"]
+version = "0.1.0"
+
+[deps]
+AlgebraicPetri = "4f99eebe-17bf-4e98-b6a1-2c4f205a959b"
