@@ -12,20 +12,44 @@ Here, we abstract the notion of a model and a search space. For us, a model is a
 At each point in the search space, indexed by a point for each dimension, we need a composite model that combines the models of each of the indices. This can be generically performed for any ACSet via pullback.
 
 The required domain-specific pieces of data to run this procedure are:
-- the ACSet schema for the class of models being explored
-- (optionally) any constraints on this class of models (e.g. objects of a slice category)
-- an evaluation function for models in the search space (returning some metric of how far off from ideal the model is + (optionally) in what way it is off)
-- stopping criteria: when is a model 'good enough'?
+- Defining the search space:
+    - the ACSet schema for the class of models being explored
+    - (optionally) any constraints on this class of models (e.g. objects of a slice category)
+- Exploring the search space
+    - an evaluation function for models in the search space (returning some metric of how far off from ideal the model is + (optionally) in what way it is off)
+    - stopping criteria: when is a model 'good enough'?
 
 ## Three Examples
 
 ### Optimal boolean circuits
 Given truth table find shortest formula. We have strict stopping criteria.
 
+Possible schema:
+AND -> -> -> 𝔹ool ⇇ NOT
+        Input↗  ↖Output
+
+CONSTRAINT IDEAS:
+- # input = `n`, # output = `1`  (CAN BE ENFORCED WITH CHASE)
+- output vertex/wire should not be the input to any function
+- what do to about graphs that don't feed the output anything?
+
+- initial model just input and output points, no other wires/boxes?
+- TODO brainstorm dimensions
+
+CONSTRAINT TYPES:
+- Chase/slice === good (transparent)
+- BOOLEAN FUNCTION FILTER / REPAIR FUNCTION (not transparent, maybe needed)
+
+data: opaque function from 𝔹oolⁿ ⟶ 𝔹ool
+
+E-graph approach to optimize circuits? Need to state logical laws in diagramatic form.
+
 ### Epidemiology models
 Given experimental data, we want to find the model that best explains it.
-
 Our model space is Petri Nets that have up to two inputs and two outputs.
+
+
+
 
 ### Neural architecture search
 Given a dataset of `n` features, we want to learn a function `ℝⁿ ⟶ ℝ` that fits the data without overfitting it. Fixing the method of training the model, the free parameter that decides what our function will be is the architecture of the network. The model space has networks with `n` inputs and one output.
