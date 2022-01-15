@@ -35,8 +35,10 @@ Leveraging AlgebraicJulia to provide an interface for scientists to explore spac
             - If there are *multiple* homomorphisms possible, we pick one at random. [^2]
             - We'll allow constraints on each `Port` to help guide this selection process
                 - Example: we're making models with data flowing on wires and through functions.
+                - <img src="/img/dataflow.png" width=40% height=40%>
                 - We want to glue two submodels along a wire, *head-to-tail*.
-                - We put a constraint on one port ("this wire is connected *only* to a function input") and the other port ("this wire is connected *only* to a function output").
+                - <img src="/img/constr.png" width=40% height=40%>
+
 - A `MulLayer` is specified in terms of a set of dimensions, which are actually `Generators`.
    - This is in analogy to grid-search.
    - <img src="/img/prod.png" width=30% height=30%>
