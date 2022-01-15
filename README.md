@@ -37,14 +37,14 @@ Here, we abstract the notion of a *model* and a *search space*. For us, a model 
                 - We put a constraint on one port ("this wire is connected *only* to a function input") and the other port ("this wire is connected *only* to a function output").
 - A `MulLayer` is specified in terms of a set of dimensions, which are actually `Generators`.
    - This is in analogy to grid-search.
-   - <img src="/img/prod.png" width=50% height=50%>
+   - <img src="/img/prod.png" width=30% height=30%>
    - We explore the resulting product space (thought of as a DAG) via BFS from the base point. This works even when each dimension produces a DAG of models (rather than a linear sequence): the resulting product space still has a DAG structure. [^3]
    - Given a set of dimensions (i.e. `Generators`) and a choice for a model along each dimension, we construct a product model via *pullback*.
-        - We need to interpret the models along each dimension as slices over a common base `ACSet` in order to take a pullback. This data is optional as there is a sensible default (the terminal object).
+        - We need to interpret the models along each dimension as slices over a common base `ACSet` in order to take a pullback. This data is optional, as there is a sensible default (the terminal object).
         - Suppose we slice over a particular `A`. If there are multiple homomorphisms `X->A`, we pick one at random.
 - Every `Generator` can be equipped with a `Loss` function, which evaluates the generated models against some criterion and possibly directs search in productive directions.
    - <img src="/img/robot.png" width=50% height=50%>
-   - For example, imagine exploring a space of possible robots. There are three basic subtasks which are combined to get the desired functionality (e.g. moving object from one side of the room to the other).
+   - For example, imagine exploring a space of possible robots. There are three basic subtasks which are combined to get the desired functionality (e.g. moving objects from one side of the room to the other).
    - We have criteria for the subtasks independently of our overall criteria, so we use four different `Loss` functions simultaneously.
    - This will encourage submodels produced by the three nested `Generators` to be good at their tasks, while the top level `Loss` is directing search towards composite models where the three components work well *together* to solve the problem of moving objects.
    - A `Generator` can have a stopping criterion that halts the sequence of models based on the loss function.
@@ -96,17 +96,9 @@ This might seem overwhelming, but the full complexity is not needed in every cas
 ### Optimal boolean circuits
 Given truth table find shortest formula. We have strict stopping criteria.
 
-Possible schema:
-AND -> -> -> 𝔹ool ⇇ NOT
-        Input↗  ↖Output
-
-CONSTRAINT:
-- \# input = `n`, \# output = `1`  (CAN BE ENFORCED WITH CHASE)
-- output vertex/wire should not be the input to any function
-data: opaque function from 𝔹oolⁿ ⟶ 𝔹ool
-
 ### Epidemiology models
 Given experimental data, we want to find the model that best explains it.
+
 Our model space is Petri Nets that have up to two inputs and two outputs.
 
 
