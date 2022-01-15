@@ -19,7 +19,7 @@ Here, we abstract the notion of a *model* and a *search space*. For us, a model 
     - Composite `Generators` depend on other `Generators`.
     - Thus, the overall model space is specified by a set of `Generators` (whose dependencies must form a *rooted* DAG: the root being the top-level model).
 - An `AddLayer` is specified by an undirected wiring diagram (UWD).
-   - ![](/img/uwd.png | width=100)
+   - <img src="/img/uwd.png" width="100" height="100">
    - UWDs have `Boxes`, `Junctions`, `Ports`, and `Wires`.[^1]
    - Each `Box` represents a placeholder for submodels to be filled in (by a `Generator`).
    - Each `Junction` is given by an `ACSet`.
