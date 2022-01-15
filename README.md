@@ -3,7 +3,9 @@ Leveraging AlgebraicJulia to provide an interface for scientists to explore spac
 
 ## Basic idea
 
-Here, we abstract the notion of a *model* and a *search space*. For us, a model is an instance of an `ACSet`.
+- We abstract the notion of a *model* and a *search space*. Our notion of a model is an instance of an `ACSet`
+    - This is a very broad category of data structures
+    - It is also restricted to 'concrete' things (representable by a relational database), which allows us to efficiently manipulate the models as data.
 
 - The first key notion is that of a `Generator`: something that can generate a sequence of models.
    - <img src="/img/gen.png" width=50% height=50%>
@@ -51,7 +53,7 @@ Here, we abstract the notion of a *model* and a *search space*. For us, a model 
        - Because models are getting more and more complex, we want to stop as soon as we get the functionality we need.
 - We can further constrain the outputs of `Generators` either by mere `Filters` or by `Chase` constraints.
 
-As an algebraic data type, then, the required data is:
+As an informal summary, the required data is, as an algebraic data type:
 ```
 SearchSpace := {schema :: ACSetSchema,  gens :: [Generator]}
 
@@ -85,12 +87,17 @@ Constraint := Filter | Chase
 
 This might seem overwhelming, but the full complexity is not needed in every case. An epidemiology model might be well generated from just one `MulLayer` containing three primitive `Dimensions`, and a circuit might be generated well from one `AddLayer`. It's likely not needed to have constraints on layers or to constrain the interfaces used in `AddLayers`.
 
-
 [^1]: Normally UWDs also have 'outer ports', which allow you to know ahead of time what `Boxes` the result can be plugged into. However, for us, checking whether a particular submodel fits into a `Box` with a particular interface is something done at 'run-time' rather than 'compile-time', as it were. More details will come below.
 
 [^2]: We really want there to be *some* homomorphism, so we filter the output produced by the `Generator` to those which satisfy the interface.
 
 [^3]: We also could (but don't yet) give distances to the edges of the preorder and get a *metric space*. Now the analogy of 'radiating outward from the origin' becomes more literal.
+
+## Open questions
+- We *explicitly* provided the composition structure for `AddLayers`. It's nice we can do this, but is there a sensible way to have a controlled exploration of the space of UWDs? (hard part: this space includes the junction overlap `ACSets` and the `Generators` that fill the nested boxes)
+- We have a hierarchical structure but *explicitly* provide the hierarchy. It's nice we can do this, but is there a sensible way to have a controlled exploration of this space of rooted DAGs of `Generators`?
+- We ought to be have the option to perform *gradient descent* in the induced model space. Ironing out the details of this conceptually will be important.
+
 ## Three Examples
 
 ### Optimal boolean circuits
