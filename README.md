@@ -12,7 +12,7 @@ Here, we abstract the notion of a *model* and a *search space*. For us, a model 
            - <img src="/img/preorder.png" width=50% height=50%>
        - One could write a function of type `ℕ ⟶ ACSet` that induces an infinite sequence
            - <img src="/img/Ncity.png" width=50% height=50%>
-       - One could enumerate all possible models
+       - One could [enumerate](https://github.com/kris-brown/ModelEnumeration.jl) all possible models
        - One could specify some rewrite rules and initial model
     - Call these *primitive* `Generators`
 - A *composite* `Generator` can be either "addition-like" (`AddLayer`) or "multiplication-like" (`MulLayer`).
@@ -36,15 +36,17 @@ Here, we abstract the notion of a *model* and a *search space*. For us, a model 
                 - We want to glue two submodels along a wire, *head-to-tail*.
                 - We put a constraint on one port ("this wire is connected *only* to a function input") and the other port ("this wire is connected *only* to a function output").
 - A `MulLayer` is specified in terms of a set of dimensions, which are actually `Generators`.
-   - This is in analogy to grid-search. Along one dimension you have models `[A B C]`, and along another dimension you have models `[1;2]`, which induces a grid of product models `[A1 B1 C1; A2 B2 C2]`.
-        - This resulting grid can be traversed from the base point as a *preorder* (i.e. radiating outward from the origin: `(A1)->(B1,A2)->(B2,C1)->(C2)`).
-   - However, we can generalize this: rather than have each dimension be a linear sequence of models, it can be preorder itself: the resulting product space still has the structure of a preorder. [^3]
+   - This is in analogy to grid-search.
+   - <img src="/img/prod.png" width=50% height=50%>
+   - We explore the resulting product space (thought of as a DAG) via BFS from the base point. This works even when each dimension produces a DAG of models (rather than a linear sequence): the resulting product space still has a DAG structure. [^3]
    - Given a set of dimensions (i.e. `Generators`) and a choice for a model along each dimension, we construct a product model via *pullback*.
-        - We need to interpret the models along each dimension as slices over a common base in order to take a pullback. This slice is optionally part of the data of the `MulLayer` (default: terminal object).
-        - Suppose we slice over a particular A. If there are multiple homomorphisms X->A, we pick one at random.
+        - We need to interpret the models along each dimension as slices over a common base `ACSet` in order to take a pullback. This data is optional as there is a sensible default (the terminal object).
+        - Suppose we slice over a particular `A`. If there are multiple homomorphisms `X->A`, we pick one at random.
 - Every `Generator` can be equipped with a `Loss` function, which evaluates the generated models against some criterion and possibly directs search in productive directions.
-   - For example, imagine a task that we know has the structure of having three subtasks whose answers are combined to get the final result.
-   - If we have criteria for both the final result *and* the subtasks, we can generate a sequence of models using four different `Loss` functions, one at the top level `AddLayer`, and one for each of the three `Generators` that fit into that top layer's three `Boxes`.
+   - <img src="/img/robot.png" width=50% height=50%>
+   - For example, imagine exploring a space of possible robots. There are three basic subtasks which are combined to get the desired functionality (e.g. moving object from one side of the room to the other).
+   - We have criteria for the subtasks independently of our overall criteria, so we use four different `Loss` functions simultaneously.
+   - This will encourage submodels produced by the three nested `Generators` to be good at their tasks, while the top level `Loss` is directing search towards composite models where the three components work well *together* to solve the problem of moving objects.
    - A `Generator` can have a stopping criterion that halts the sequence of models based on the loss function.
        - Because models are getting more and more complex, we want to stop as soon as we get the functionality we need.
 - We can further constrain the outputs of `Generators` either by mere `Filters` or by `Chase` constraints.
