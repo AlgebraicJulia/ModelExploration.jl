@@ -13,10 +13,13 @@ struct Product <: Gen
     g2::Gen
     slice::StructACSet
 end
+
 struct Literal <: Gen
-    lit:: Vector{StructACSet}
+    lit::Vector{StructACSet}
 end
+
 function select(g::Gen, lossFn::Function)::StructACSet
     return Graph()
 end
+
 end # module
