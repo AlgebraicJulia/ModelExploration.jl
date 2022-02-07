@@ -102,10 +102,15 @@ begin
 	  :t_infection=>(:Pop=>:Pop),
 	  :t_strata=>(:Pop=>:Pop)
 	)
+
+	infectious_type = map(infectious_type, Name=name->nothing);
 	
 	prodSpace= ModelExploration.Product(dim1, dim2, infectious_type)
 	Graph(infectious_type)
 end
+
+# ╔═╡ 774cc94e-52ae-41d6-823f-4a4bfeceec19
+homomorphisms(SIS, infectious_type)
 
 # ╔═╡ 21f0b44f-6868-4b2c-b235-35ea91fd3046
 md"""Define the loss function
@@ -128,6 +133,7 @@ ModelExploration.select(prodSpace, ()->1.)
 # ╠═70d70a1e-63ba-495a-a7e0-33d677ea56cf
 # ╟─dc439087-d393-416f-b0b4-57a3c2c8d69c
 # ╠═36849bbb-b1e0-4fca-b633-fe04ac3377ac
+# ╠═774cc94e-52ae-41d6-823f-4a4bfeceec19
 # ╟─21f0b44f-6868-4b2c-b235-35ea91fd3046
 # ╟─33ae7c95-ded4-45d6-a600-4d8b409b16a0
 # ╠═2ec8c472-d3de-4fc9-875b-c5815b7d22f7
