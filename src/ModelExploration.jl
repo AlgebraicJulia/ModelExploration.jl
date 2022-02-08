@@ -1,8 +1,10 @@
 module ModelExploration
 
-export Product, Literal, Gen, SliceLit, select, unfold
+export Product, Literal, Gen, SliceLit, select, unfold, get_infected_states, sum_infected_states, generate_data, make_loss, train, eval_petri_fn
 
+include("Petri.jl")
 using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra: pullback
 using Catlab.Graphs
 using Catlab.Theories: attrtype
 
@@ -52,7 +54,7 @@ function unfold(g::Product)::Vector{StructACSet}
 end
 
 function select(g::Gen, lossFn::Function)::StructACSet
-  return Graph()
+    first(sort(unfold(g), by=lossFn))
 end
 
 end # module

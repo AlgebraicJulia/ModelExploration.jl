@@ -7,12 +7,20 @@ using InteractiveUtils
 # ╔═╡ bd814b22-c126-40eb-94ff-02eeac4a2965
 begin 
 	using Revise, Pkg
+	Pkg.activate("..")
+    # Pkg.add([
+    #     Pkg.PackageSpec(name="Catalyst", version="10.1"),
+    # ])
+    # using Catalyst
+
 	Pkg.develop(path="..")
 	Pkg.develop(path="../../Catlab.jl")
 	Pkg.develop(path="../../AlgebraicPetri.jl")
 	using Catlab.CategoricalAlgebra
 	using AlgebraicPetri
+	using AlgebraicPetri: Graph
     using ModelExploration
+	using Test
 end
 
 # ╔═╡ 28a03065-8d42-402d-b140-13b7f87001b6
@@ -145,30 +153,31 @@ end;
 	strat_models = SliceLit(infectious_type, [quarantine => quarantine_type, age_stratification => age_s_type, flux_metapopulation => flux_m_type, simple_trip => simple_t_type ]);
 
 
-# ╔═╡ e83a0a27-28d9-45a2-b257-8f4686151e4d
-begin 
-	p = LabelledPetriNet([:P])
-    h = ACSetTransformation(p,p,S=[1],Name=name->nothing)
-	h isa TightACSetTransformation
-end
-
 # ╔═╡ dc439087-d393-416f-b0b4-57a3c2c8d69c
 md"""Construct the model space as Product([dim1, dim2], slice)"""
-
-# ╔═╡ 92bd0d3d-2ccb-4813-83b9-4f2d6893ef7c
-begin 
-	m1 = unfold(strat_models)[1];
-	m2 = unfold(epi_models)[1];
-	pullback(m1,m2)
-end
-
 
 # ╔═╡ 634c732d-6c68-4a2d-a570-11e149358973
 prodSpace= ModelExploration.Product(epi_models, strat_models, infectious_type);
 
+# ╔═╡ b6a6d27d-cae4-4fad-9f59-e1feccad5cea
+begin 
+	true_model = unfold(prodSpace)[2]
+	Graph(true_model)
+end
 
-# ╔═╡ d7be94f1-ede3-454e-8e18-4bb3109343ee
-Graph(first(unfold(prodSpace)))
+# ╔═╡ 09ce0d2d-9eee-4997-9d93-8316a8295da0
+pathof(Catalyst)
+
+# ╔═╡ 7664c213-a569-4069-9b0e-45db9d35344f
+begin 
+	true_rates = Float64[1e-3,1e-5,1e-4,1e-7,1e-4]
+	true_initial_pop = Float64[1e6,1e3,1e2,1e-2,1e-2]
+	loss_fun = eval_petri_fn(true_model, true_rates,true_initial_pop)
+end
+
+# ╔═╡ 7fb8a18a-d0f3-40a2-bc78-e40651701d65
+plot(generate_data(true_model, true_rates,true_initial_pop))
+
 
 # ╔═╡ 21f0b44f-6868-4b2c-b235-35ea91fd3046
 md"""Define the loss function
@@ -179,7 +188,10 @@ We've already computed the simulated data from the desired Petri net (load from 
 md"""Run selection, should return the Petri net that generated the data"""
 
 # ╔═╡ 2ec8c472-d3de-4fc9-875b-c5815b7d22f7
-ModelExploration.select(prodSpace, ()->1.)
+begin 
+	best_model = Graph(ModelExploration.select(prodSpace, loss_fun))
+    @test best_model == true_model 
+end
 
 # ╔═╡ Cell order:
 # ╠═bd814b22-c126-40eb-94ff-02eeac4a2965
@@ -189,13 +201,14 @@ ModelExploration.select(prodSpace, ()->1.)
 # ╠═43112b41-b539-481e-9a29-fea386439544
 # ╠═148087ee-ed18-4e1e-aecb-a3736614c4de
 # ╟─8eac847e-d590-47d4-8b20-b407b620c559
-# ╠═c34e9ad3-e43a-4d6b-981d-4dbcb82d7c0e
+# ╟─c34e9ad3-e43a-4d6b-981d-4dbcb82d7c0e
 # ╠═35a823ec-260b-4a15-876b-30d3b6a090a6
-# ╠═e83a0a27-28d9-45a2-b257-8f4686151e4d
 # ╠═dc439087-d393-416f-b0b4-57a3c2c8d69c
-# ╠═92bd0d3d-2ccb-4813-83b9-4f2d6893ef7c
 # ╠═634c732d-6c68-4a2d-a570-11e149358973
-# ╠═d7be94f1-ede3-454e-8e18-4bb3109343ee
+# ╠═b6a6d27d-cae4-4fad-9f59-e1feccad5cea
+# ╠═09ce0d2d-9eee-4997-9d93-8316a8295da0
+# ╠═7664c213-a569-4069-9b0e-45db9d35344f
+# ╠═7fb8a18a-d0f3-40a2-bc78-e40651701d65
 # ╟─21f0b44f-6868-4b2c-b235-35ea91fd3046
 # ╟─33ae7c95-ded4-45d6-a600-4d8b409b16a0
 # ╠═2ec8c472-d3de-4fc9-875b-c5815b7d22f7
