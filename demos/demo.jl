@@ -8,11 +8,23 @@ using InteractiveUtils
 begin 
 	using Revise, Pkg
 	Pkg.develop(path="..")
-	#Pkg.develop(path="../../Catlab.jl")
-	#Pkg.develop(path="../../AlgebraicPetri.jl")
+	Pkg.develop(path="../../Catlab.jl")
+	Pkg.develop(path="../../AlgebraicPetri.jl")
 	using Catlab.CategoricalAlgebra
 	using AlgebraicPetri
     using ModelExploration
+end
+
+# ╔═╡ 28a03065-8d42-402d-b140-13b7f87001b6
+md"""Define typing system for models"""
+
+# ╔═╡ 36849bbb-b1e0-4fca-b633-fe04ac3377ac
+begin
+	infectious_type = LabelledPetriNet([:Pop],
+	  :interaction=>((:Pop, :Pop)=>(:Pop, :Pop)),
+	  :t_infection=>(:Pop=>:Pop),
+	  :t_strata=>(:Pop=>:Pop))	
+	Graph(infectious_type)
 end
 
 # ╔═╡ 5c946c97-7484-4a58-89fa-eba5f903faac
@@ -20,6 +32,8 @@ md"""Define petri nets for epidemiology models dimension"""
 
 # ╔═╡ 43112b41-b539-481e-9a29-fea386439544
 begin
+	IO_help(i::Int) = let d = Dict([j=>j%2+1 for j in 1:2*i]); (I=d,O=d) end
+	
 	SIR = LabelledPetriNet([:S, :I, :R],
 	  :inf => ((:S, :I)=>(:I, :I)),
 	  :rec => (:I=>:R),
@@ -27,6 +41,7 @@ begin
 	  :id => (:I => :I),
 	  :id => (:R => :R)
 	)
+	SIR_type = merge((T=[1,2,3,3,3],), IO_help(1))
 	
 	SIR_travel_ban = LabelledPetriNet([:S, :I, :R],
 	  :inf => ((:S, :I)=>(:I, :I)),
@@ -34,6 +49,8 @@ begin
 	  :id => (:S => :S),
 	  :id => (:R => :R)
 	)
+
+	SIR_tb_type = merge((T=[1,2,3,3],), IO_help(1))
 	
 	SIS = LabelledPetriNet([:S, :I],
 	  :inf => ((:S, :I)=>(:I, :I)),
@@ -41,12 +58,33 @@ begin
 	  :id => (:S => :S),
 	  :id => (:I => :I),
 	)
-
-	# TODO: use semagrams to define SVIIvR model
 	
-	epi_models = [SIS, SIR, SIR_travel_ban]
-	Graph(SIR_travel_ban)
-end
+	SIS_type = merge((T=[1,2,3,3],),IO_help(1))
+
+	SVIIvR = LabelledPetriNet([:S, :I, :R, :Iv, :V],
+	  :inf => ((:S, :I)=>(:I, :I)),
+	  :inf => ((:V,:I)=>(:I,:I)),
+	  :inf => (:S, :Iv) => (:Iv,:Iv),
+	  :inf => ((:V, :Iv) => (:Iv,:Iv)),
+	  :rec => (:I=>:R),
+	  :rec => (:Iv=>:R),
+	  :vax => (:S=>:V),
+	  :id => (:S => :S),
+	  :id => (:I => :I),
+	  :id => (:V => :V),
+	  :id => (:Iv => :Iv),
+	  :id => (:R => :R)
+	)
+	
+	SVIIvR_type = merge((T=[1,1,1,1,2,2,2,3,3,3,3,3],),IO_help(4))
+	
+end;
+
+# ╔═╡ 148087ee-ed18-4e1e-aecb-a3736614c4de
+	epi_models = SliceLit(infectious_type, [
+		SIR=>SIR_type, SIS=>SIS_type, 
+		SIR_travel_ban=>SIR_tb_type, SVIIvR=>SVIIvR_type]);
+
 
 # ╔═╡ 8eac847e-d590-47d4-8b20-b407b620c559
 md"""Define petri nets for stratification dimension"""
@@ -54,63 +92,83 @@ md"""Define petri nets for stratification dimension"""
 # ╔═╡ c34e9ad3-e43a-4d6b-981d-4dbcb82d7c0e
 begin
 	quarantine = LabelledPetriNet([:Q, :not_Q],
-	    :id => (:Q => :Q),
-	    :id => (:not_Q => :not_Q),
+	    :interaction => ((:not_Q, :not_Q) => (:not_Q, :not_Q)),
 	    :enter_quarantine => (:not_Q => :Q),
 	    :exit_quarantine => (:Q => :not_Q),
-	    :interaction => ((:not_Q, :not_Q) => (:not_Q, :not_Q))
+	    :id => (:Q => :Q),
+	    :id => (:not_Q => :not_Q),
 	)
+	quarantine_type = (T=[1, 3, 3, 2, 2], I=Dict(1=>1,2=>2), O=Dict(1=>1,2=>2))
 	
 	age_stratification = LabelledPetriNet([:Child, :Adult],
-	    :id => (:Child => :Child),
-	    :id => (:Adult => :Adult),
 	    :interaction => ((:Child, :Child) => (:Child, :Child)),
 	    :interaction => ((:Adult, :Adult) => (:Adult, :Adult)),
-	    :interaction => ((:Child, :Adult) => (:Child, :Adult))
+	    :interaction => ((:Child, :Adult) => (:Child, :Adult)),
+	    :id => (:Child => :Child),
+	    :id => (:Adult => :Adult),
 	)
+	age_s_type = merge((T=[1,1,1,2,2],),IO_help(3))
 	
 	flux_metapopulation = LabelledPetriNet([:Patch1, :Patch2],
-	    :travel => (:Patch1 => :Patch2),
+	    :interaction => ((:Patch1, :Patch1) => (:Patch1, :Patch1)),
+	    :interaction => ((:Patch2, :Patch2) => (:Patch2, :Patch2)),	    
+		:travel => (:Patch1 => :Patch2),
 	    :travel => (:Patch2 => :Patch1),
 	    :id => (:Patch1 => :Patch1),
 	    :id => (:Patch2 => :Patch2),
-	    :interaction => ((:Patch1, :Patch1) => (:Patch1, :Patch1)),
-	    :interaction => ((:Patch2, :Patch2) => (:Patch2, :Patch2))
+	)
+	flux_m_type = merge((T=[1,1,3,3,2,2],), IO_help(2))
+
+	simple_trip =  LabelledPetriNet([:P11, :P21, :P12, :P22],
+	    :interaction11_11 => ((:P11, :P11) => (:P11, :P11)),
+	    :interaction12_12 => ((:P12, :P12) => (:P12, :P12)),
+	    :interaction21_21 => ((:P21, :P21) => (:P21, :P21)),
+	    :interaction22_22 => ((:P22, :P22) => (:P22, :P22)),
+	    :interaction11_21 => ((:P11, :P21) => (:P11, :P21)),
+	    :interaction22_12 => ((:P22, :P12) => (:P22, :P12)),
+	    :interaction12_22 => ((:P12, :P22) => (:P12, :P22)),
+	    :interaction21_11 => ((:P21, :P11) => (:P21, :P11)),
+		:travel11_12 => (:P11 => :P12),
+		:travel12_11 => (:P12 => :P11),
+		:travel21_22 => (:P21 => :P22),
+		:travel22_21 => (:P22 => :P21),
+	    :id => (:P11 => :P11),
+	    :id => (:P21 => :P21),
+	    :id => (:P12 => :P12),
+	    :id => (:P22 => :P22),
 	)
 	
-	# TODO: use semagrams to make a simple trip stratification
-	strat_models = [quarantine, age_stratification, flux_metapopulation]
-	Graph(quarantine)
-end
+	simple_t_type = merge((T=[1,1,1,1,1,1,1,1,3,3,3,3,2,2,2,2],), IO_help(8))
+end;
 
-# ╔═╡ 384f2536-e54d-48e8-bd6e-2c58ce81aa26
-md"""Declare "literal" generators"""
+# ╔═╡ 35a823ec-260b-4a15-876b-30d3b6a090a6
+	strat_models = SliceLit(infectious_type, [quarantine => quarantine_type, age_stratification => age_s_type, flux_metapopulation => flux_m_type, simple_trip => simple_t_type ]);
 
-# ╔═╡ 70d70a1e-63ba-495a-a7e0-33d677ea56cf
-begin
-	dim1 = Literal(epi_models)
-	dim2 = Literal(strat_models)
+
+# ╔═╡ e83a0a27-28d9-45a2-b257-8f4686151e4d
+begin 
+	p = LabelledPetriNet([:P])
+    h = ACSetTransformation(p,p,S=[1],Name=name->nothing)
+	h isa TightACSetTransformation
 end
 
 # ╔═╡ dc439087-d393-416f-b0b4-57a3c2c8d69c
 md"""Construct the model space as Product([dim1, dim2], slice)"""
 
-# ╔═╡ 36849bbb-b1e0-4fca-b633-fe04ac3377ac
-begin
-	infectious_type = LabelledPetriNet([:Pop],
-	  :interaction=>((:Pop, :Pop)=>(:Pop, :Pop)),
-	  :t_infection=>(:Pop=>:Pop),
-	  :t_strata=>(:Pop=>:Pop)
-	)
-
-	infectious_type = map(infectious_type, Name=name->nothing);
-	
-	prodSpace= ModelExploration.Product(dim1, dim2, infectious_type)
-	Graph(infectious_type)
+# ╔═╡ 92bd0d3d-2ccb-4813-83b9-4f2d6893ef7c
+begin 
+	m1 = unfold(strat_models)[1];
+	m2 = unfold(epi_models)[1];
+	pullback(m1,m2)
 end
 
-# ╔═╡ 774cc94e-52ae-41d6-823f-4a4bfeceec19
-homomorphisms(SIS, infectious_type)
+
+# ╔═╡ 634c732d-6c68-4a2d-a570-11e149358973
+prodSpace= ModelExploration.Product(epi_models, strat_models, infectious_type);
+
+
+# ╔═╡ d7be94f1-ede3-454e-8e18-4bb3109343ee
+Graph(first(unfold(prodSpace)))
 
 # ╔═╡ 21f0b44f-6868-4b2c-b235-35ea91fd3046
 md"""Define the loss function
@@ -125,15 +183,19 @@ ModelExploration.select(prodSpace, ()->1.)
 
 # ╔═╡ Cell order:
 # ╠═bd814b22-c126-40eb-94ff-02eeac4a2965
+# ╟─28a03065-8d42-402d-b140-13b7f87001b6
+# ╠═36849bbb-b1e0-4fca-b633-fe04ac3377ac
 # ╟─5c946c97-7484-4a58-89fa-eba5f903faac
 # ╠═43112b41-b539-481e-9a29-fea386439544
+# ╠═148087ee-ed18-4e1e-aecb-a3736614c4de
 # ╟─8eac847e-d590-47d4-8b20-b407b620c559
 # ╠═c34e9ad3-e43a-4d6b-981d-4dbcb82d7c0e
-# ╟─384f2536-e54d-48e8-bd6e-2c58ce81aa26
-# ╠═70d70a1e-63ba-495a-a7e0-33d677ea56cf
-# ╟─dc439087-d393-416f-b0b4-57a3c2c8d69c
-# ╠═36849bbb-b1e0-4fca-b633-fe04ac3377ac
-# ╠═774cc94e-52ae-41d6-823f-4a4bfeceec19
+# ╠═35a823ec-260b-4a15-876b-30d3b6a090a6
+# ╠═e83a0a27-28d9-45a2-b257-8f4686151e4d
+# ╠═dc439087-d393-416f-b0b4-57a3c2c8d69c
+# ╠═92bd0d3d-2ccb-4813-83b9-4f2d6893ef7c
+# ╠═634c732d-6c68-4a2d-a570-11e149358973
+# ╠═d7be94f1-ede3-454e-8e18-4bb3109343ee
 # ╟─21f0b44f-6868-4b2c-b235-35ea91fd3046
 # ╟─33ae7c95-ded4-45d6-a600-4d8b409b16a0
 # ╠═2ec8c472-d3de-4fc9-875b-c5815b7d22f7
