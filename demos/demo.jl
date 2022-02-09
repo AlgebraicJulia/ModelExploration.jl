@@ -6,20 +6,23 @@ using InteractiveUtils
 
 # ╔═╡ bd814b22-c126-40eb-94ff-02eeac4a2965
 begin 
-	using Revise, Pkg
-	Pkg.activate("..")
+	using Pkg
+	Pkg.activate(Base.current_project())
     # Pkg.add([
     #     Pkg.PackageSpec(name="Catalyst", version="10.1"),
     # ])
     # using Catalyst
 
-	Pkg.develop(path="..")
-	Pkg.develop(path="../../Catlab.jl")
-	Pkg.develop(path="../../AlgebraicPetri.jl")
+	Pkg.instantiate()
+	#Pkg.develop(path="..")
+	#Pkg.add(url="https://github.com/kris-brown/Catlab.jl", rev="looseacset_csp")
+	#Pkg.add(url="https://github.com/AlgebraicJulia/AlgebraicPetri.jl", rev="Catalyst_v10")
+	using Revise
 	using Catlab.CategoricalAlgebra
 	using AlgebraicPetri
 	using AlgebraicPetri: Graph
     using ModelExploration
+	using Plots
 	using Test
 end
 
@@ -165,13 +168,16 @@ begin
 	Graph(true_model)
 end
 
-# ╔═╡ 09ce0d2d-9eee-4997-9d93-8316a8295da0
-pathof(Catalyst)
+# ╔═╡ f3092427-d6b8-4241-a319-b17e968ca735
+true_model[:name]
+
+# ╔═╡ 0af79678-19bd-4ddd-a5e7-08843dcbd289
+ns(true_model)
 
 # ╔═╡ 7664c213-a569-4069-9b0e-45db9d35344f
 begin 
 	true_rates = Float64[1e-3,1e-5,1e-4,1e-7,1e-4]
-	true_initial_pop = Float64[1e6,1e3,1e2,1e-2,1e-2]
+	true_initial_pop = Float64[1e6,1e6,1e3,1e2,1e-2,1e-2]
 	loss_fun = eval_petri_fn(true_model, true_rates,true_initial_pop)
 end
 
@@ -206,7 +212,8 @@ end
 # ╠═dc439087-d393-416f-b0b4-57a3c2c8d69c
 # ╠═634c732d-6c68-4a2d-a570-11e149358973
 # ╠═b6a6d27d-cae4-4fad-9f59-e1feccad5cea
-# ╠═09ce0d2d-9eee-4997-9d93-8316a8295da0
+# ╠═f3092427-d6b8-4241-a319-b17e968ca735
+# ╠═0af79678-19bd-4ddd-a5e7-08843dcbd289
 # ╠═7664c213-a569-4069-9b0e-45db9d35344f
 # ╠═7fb8a18a-d0f3-40a2-bc78-e40651701d65
 # ╟─21f0b44f-6868-4b2c-b235-35ea91fd3046

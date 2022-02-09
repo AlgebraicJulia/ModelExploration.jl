@@ -1,6 +1,6 @@
 using AlgebraicPetri
 using OrdinaryDiffEq
-using DiffEqFlux, Flux
+using DiffEqFlux
 using Catalyst
 using LinearAlgebra: dot
 
