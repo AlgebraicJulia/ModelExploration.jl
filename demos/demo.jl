@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ bd814b22-c126-40eb-94ff-02eeac4a2965
 begin 
-	using Pkg
+	using Pkg, Revise
 	Pkg.activate(Base.current_project())
     # Pkg.add([
     #     Pkg.PackageSpec(name="Catalyst", version="10.1"),
@@ -17,7 +17,6 @@ begin
 	#Pkg.develop(path="..")
 	#Pkg.add(url="https://github.com/kris-brown/Catlab.jl", rev="looseacset_csp")
 	#Pkg.add(url="https://github.com/AlgebraicJulia/AlgebraicPetri.jl", rev="Catalyst_v10")
-	using Revise
 	using Catlab.CategoricalAlgebra
 	using AlgebraicPetri
 	using AlgebraicPetri: Graph
@@ -169,21 +168,43 @@ begin
 end
 
 # ╔═╡ f3092427-d6b8-4241-a319-b17e968ca735
-true_model[:name]
-
-# ╔═╡ 0af79678-19bd-4ddd-a5e7-08843dcbd289
-ns(true_model)
+true_model
 
 # ╔═╡ 7664c213-a569-4069-9b0e-45db9d35344f
 begin 
-	true_rates = Float64[1e-3,1e-5,1e-4,1e-7,1e-4]
-	true_initial_pop = Float64[1e6,1e6,1e3,1e2,1e-2,1e-2]
-	loss_fun = eval_petri_fn(true_model, true_rates,true_initial_pop)
+	# inf: (-8,-5), rec: (-4,-1), else (-10,0)
+	true_rates = Float64[5e-6,5e-8,5e-7, 1e-2, 2e-2]
+	# I: (2,6), R: (-5 0), else (2,8)
+	true_initial_pop = Float64[1e7,1e3,1e-1,2e7,1e4,1e-1]
+end;
+
+# ╔═╡ 520ec980-861b-4f7a-b7b2-9450cb3c3e60
+begin
+	d = generate_data(true_model, true_rates, true_initial_pop)
+	plot(d)
 end
 
-# ╔═╡ 7fb8a18a-d0f3-40a2-bc78-e40651701d65
-plot(generate_data(true_model, true_rates,true_initial_pop))
+# ╔═╡ d029518b-456e-4520-8df1-7e4320893822
+begin 
+    l2, ps = train(true_model,d)
+	println("Loss2 = $l2 PS = $ps")
+	plot(generate_data(true_model, ps[1:5], ps[6:11]))
+	
+end
 
+# ╔═╡ f6750c70-0a9a-4a8b-b505-ab462314b6a7
+ms = unfold(prodSpace);
+
+# ╔═╡ 50e151e5-417c-4d5a-bad2-f0b54c0b32a5
+begin 
+    ls4, ps4 = train(ms[4],d)
+	println("Loss4 = $ls4 PS4 = $ps4")
+	plot(generate_data(ms[4], ps4[1:nt(ms[4])], ps4[nt(ms[4])+1:end]))
+	
+end
+
+# ╔═╡ 7c12d16c-c395-47b9-bee1-c674d525af6d
+loss_fun = eval_petri_fn(true_model, true_rates, true_initial_pop);
 
 # ╔═╡ 21f0b44f-6868-4b2c-b235-35ea91fd3046
 md"""Define the loss function
@@ -195,9 +216,11 @@ md"""Run selection, should return the Petri net that generated the data"""
 
 # ╔═╡ 2ec8c472-d3de-4fc9-875b-c5815b7d22f7
 begin 
-	best_model = Graph(ModelExploration.select(prodSpace, loss_fun))
+	best_model = ModelExploration.select(prodSpace, loss_fun)
     @test best_model == true_model 
+	#Graph(best_model)
 end
+
 
 # ╔═╡ Cell order:
 # ╠═bd814b22-c126-40eb-94ff-02eeac4a2965
@@ -209,13 +232,16 @@ end
 # ╟─8eac847e-d590-47d4-8b20-b407b620c559
 # ╟─c34e9ad3-e43a-4d6b-981d-4dbcb82d7c0e
 # ╠═35a823ec-260b-4a15-876b-30d3b6a090a6
-# ╠═dc439087-d393-416f-b0b4-57a3c2c8d69c
+# ╟─dc439087-d393-416f-b0b4-57a3c2c8d69c
 # ╠═634c732d-6c68-4a2d-a570-11e149358973
 # ╠═b6a6d27d-cae4-4fad-9f59-e1feccad5cea
 # ╠═f3092427-d6b8-4241-a319-b17e968ca735
-# ╠═0af79678-19bd-4ddd-a5e7-08843dcbd289
 # ╠═7664c213-a569-4069-9b0e-45db9d35344f
-# ╠═7fb8a18a-d0f3-40a2-bc78-e40651701d65
+# ╠═520ec980-861b-4f7a-b7b2-9450cb3c3e60
+# ╠═d029518b-456e-4520-8df1-7e4320893822
+# ╠═f6750c70-0a9a-4a8b-b505-ab462314b6a7
+# ╠═50e151e5-417c-4d5a-bad2-f0b54c0b32a5
+# ╠═7c12d16c-c395-47b9-bee1-c674d525af6d
 # ╟─21f0b44f-6868-4b2c-b235-35ea91fd3046
 # ╟─33ae7c95-ded4-45d6-a600-4d8b409b16a0
 # ╠═2ec8c472-d3de-4fc9-875b-c5815b7d22f7

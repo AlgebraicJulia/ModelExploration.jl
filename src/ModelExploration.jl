@@ -54,7 +54,18 @@ function unfold(g::Product)::Vector{StructACSet}
 end
 
 function select(g::Gen, lossFn::Function)::StructACSet
-    first(sort(unfold(g), by=lossFn))
+  
+  best = typemax(Float64)
+  best_m = nothing
+  for (i,m) in enumerate(unfold(g)[1:9])
+      println("i $i")
+      lss = lossFn(m)
+      println("\tloss $lss")
+      if lss < best 
+        best_m = m 
+      end 
+  end
+  return best_m 
 end
 
 end # module
