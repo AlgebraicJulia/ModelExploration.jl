@@ -1,7 +1,7 @@
 using AlgebraicPetri
 using OrdinaryDiffEq
 using DiffEqFlux
-using Catalyst
+#using Catalyst
 using LinearAlgebra: dot
 
 """
@@ -13,7 +13,7 @@ Returns vector int
 get_infected_states(g::AbstractLabelledPetriNet) =
    [i for (i,s) in enumerate(g[:sname]) if occursin("I", string(s))]
 
-function get_bounds(g::AbstractLabelledPetriNet) 
+function get_bounds(g::AbstractLabelledPetriNet)
   lb, ub = Float64[],Float64[]
   for (sym,_) in g[:tname]
     sym_= string(sym)
@@ -21,7 +21,7 @@ function get_bounds(g::AbstractLabelledPetriNet)
       push!(lb, log(1e-8)); push!(ub, log(1e-5))
     elseif occursin("rec", sym_)
       push!(lb, log(1e-4)); push!(ub, log(1e-1))
-    else 
+    else
       push!(lb, log(1e-10)); push!(ub, log(1))
     end
   end
