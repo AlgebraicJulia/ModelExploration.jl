@@ -17,7 +17,7 @@ abstract type NatGen end
 
 
 """
-Base case: a explicit diagram considered as a model space
+Base case: an explicit diagram considered as a model space
 
 E.g.
 
@@ -93,7 +93,14 @@ end
 One = FinCat(ThOne)
 
 unfold(g::Literal)::Diagram = g.lit
-unfold(g::SliceHom)::Diagram = unfold(g.slice_diagram)
+
+function unfold(g::SliceHom)::Diagram 
+  res = unfold(g.slice_diagram)
+  for ob in values(ob_map(diagram(res)))
+    is_natural(ob.slice) || error("Not natural")
+  end
+  return res
+end
 
 """
 Generate the data of a diagram homomorphism from a slice hom
@@ -124,8 +131,8 @@ end
 unfold(l::LitFG) = l.lit
 unfold(l::LitNG) = l.lit
 
-unfold(g::ModelHom{T,Base}) where {T,Base} = DiagramHom{T,Base}(
-    unfold(g.fun), unfold(g.nat), unfold(d.dom), unfold(g.codom))
+unfold(g::ModelHom{T,Base}) where {T,Base} = DiagramHom{T}(
+    unfold(g.fun), unfold(g.nat), unfold(g.dom), unfold(g.codom))
 
 #=function unfold(g::SliceLit; loose::Bool=true)::Vector{ACSetTransformation}
   transformations = ACSetTransformation[]
@@ -139,7 +146,7 @@ unfold(g::ModelHom{T,Base}) where {T,Base} = DiagramHom{T,Base}(
 end=#
 
 """Assumes slice Generators. TODO: search homomorphisms otherwise"""
-function unfold(g::Pullback)::Vector{StructACSet}
+#=function unfold(g::Pullback)::Vector{StructACSet}
   models = StructACSet[]
   for x in unfold(g.g1)
     for y in unfold(g.g2)
@@ -147,6 +154,11 @@ function unfold(g::Pullback)::Vector{StructACSet}
     end
   end
   return models
+end=#
+
+function unfold(g::PullbackSpace{T,Base})::Diagram where {T,Base}
+  pb = pullback(Multicospan([unfold(g.g1), unfold(g.g2)]))
+  return pb
 end
 
 function select(g::ModelSpace, lossFn::Function)::StructACSet

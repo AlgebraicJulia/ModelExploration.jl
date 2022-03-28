@@ -67,7 +67,7 @@ quarantine = LabelledPetriNet([:Q, :not_Q],
     :id => (:Q => :Q),
     :id => (:not_Q => :not_Q),
 )
-quarantine_type = (T=[1, 3, 3, 2, 2], I=Dict(1=>1,2=>2), O=Dict(1=>1,2=>2))
+quarantine_type = make_slice(quarantine, (T=[1, 3, 3, 2, 2], I=Dict(1=>1,2=>2), O=Dict(1=>1,2=>2)))
 #
 age_stratification = LabelledPetriNet([:Child, :Adult],
     :interaction => ((:Child, :Child) => (:Child, :Child)),
@@ -128,8 +128,9 @@ diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type,
                                :X3=>flux_m_type, :X4=>simple_t_type));
 
 
-to_model_hom(diag_disease)
-# pb = PullbackSpace(diag_disease, diag_strata);
+mh1 = to_model_hom(diag_disease)
+mh2 = to_model_hom(diag_strata)
+pb = PullbackSpace(mh1, mh2);
 
 
 
