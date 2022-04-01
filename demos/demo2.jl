@@ -112,12 +112,16 @@ simple_t_type = make_slice(simple_trip,
 @present ThFour(FreeCategory) begin
     (X1,X2,X3,X4)::Ob
 end
+@present ThOne(FreeCategory) begin
+  X::Ob
+end
+
 const ACSetCat{S} = TypeCat{S, ACSetTransformation}
 const ACSetCatSlice{S} = TypeCat{S, ACSetTransformation}
 const Petri = ACSetCat{LabelledPetriNet}
 const PetriHom = SliceCat{LabelledPetriNet,ACSetTransformation}
 
-Four = FinCat(ThFour)
+One, Four = FinCat.([ThOne,ThFour])
 
 to_slicehom(x) = SliceHom(Literal(Diagram(
   FinDomFunctor(x, nothing, Four, PetriHom()))))
@@ -127,10 +131,9 @@ diag_disease =to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
 diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type,
                                :X3=>flux_m_type, :X4=>simple_t_type));
 
-
 mh1 = to_model_hom(diag_disease)
 mh2 = to_model_hom(diag_strata)
 pb = PullbackSpace(mh1, mh2);
-
-
-
+upb = unfold(pb);
+aupb = apex(upb);
+@test length(ob_generators(dom(diagram(aupb)))) == 16

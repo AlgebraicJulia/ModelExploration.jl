@@ -94,7 +94,7 @@ One = FinCat(ThOne)
 
 unfold(g::Literal)::Diagram = g.lit
 
-function unfold(g::SliceHom)::Diagram 
+function unfold(g::SliceHom)::Diagram
   res = unfold(g.slice_diagram)
   for ob in values(ob_map(diagram(res)))
     is_natural(ob.slice) || error("Not natural")
@@ -156,7 +156,7 @@ end=#
   return models
 end=#
 
-function unfold(g::PullbackSpace{T,Base})::Diagram where {T,Base}
+function unfold(g::PullbackSpace{T,Base})::DiagLimit where {T,Base}
   pb = pullback(Multicospan([unfold(g.g1), unfold(g.g2)]))
   return pb
 end
