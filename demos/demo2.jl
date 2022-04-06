@@ -126,7 +126,7 @@ One, Four = FinCat.([ThOne,ThFour])
 to_slicehom(x) = SliceHom(Literal(Diagram(
   FinDomFunctor(x, nothing, Four, PetriHom()))))
 
-diag_disease =to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
+diag_disease = to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
                                :X3=>SVIIvR_type,:X4=>SIR_tb_type));
 diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type,
                                :X3=>flux_m_type, :X4=>simple_t_type));
@@ -137,3 +137,7 @@ pb = PullbackSpace(mh1, mh2);
 upb = unfold(pb);
 aupb = apex(upb);
 @test length(ob_generators(dom(diagram(aupb)))) == 16
+
+x = ob_map(aupb, Symbol("(X1, X1)"))
+
+
