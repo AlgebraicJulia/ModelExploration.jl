@@ -6,6 +6,8 @@ using DiffEqFlux #=, Flux=#
 using Plots
 #import Catalyst: ReactionSystem
 
+println("Starting")
+
 SIR = LabelledPetriNet([:S, :I, :R],
   :inf => ((:S, :I)=>(:I, :I)),
   :rec => (:I=>:R),
@@ -47,8 +49,8 @@ sol_real = solve(op, Tsit5(), tstops=sample_times)
 sample_vals = [sol_real.u[findfirst(sol_real.t .>= ts)][var] * (1+(0.1rand()-0.05)) 
                 for var in 1:3, ts in sample_times]
 
-plot(sol_real, lw=2)
-plot!(sample_times, sample_vals', seriestype=:scatter, label="")
+#plot(sol_real, lw=2)
+#plot!(sample_times, sample_vals', seriestype=:scatter, label="")
 
 function optimise_p(p_init,tend)
     function loss(p)
@@ -57,16 +59,17 @@ function optimise_p(p_init,tend)
         loss = sum(abs2, vals .- sample_vals[:,1:size(vals)[2]])   
         return loss, sol
     end
-    return DiffEqFlux.sciml_train(loss, p_init, maxiters=100)
+    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.1),=# maxiters=200)
 end
-
+println("Running param estimation")
 p_estimate = [0.0,0.0]
 for i in 50.0:50.0:250.0
     global p_estimate = optimise_p(p_estimate, i).minimizer
     sol_estimate = solve(remake(op,tspan=(0.0,250.0),p=p_estimate), Tsit5())
     
-    plot(sample_times, sample_vals', seriestype=:scatter, label="")
-    plot!(sol_estimate, lw=2)
+    #plot(sample_times, sample_vals', seriestype=:scatter, label="")
+    #plot!(sol_estimate, lw=2)
+    println(p_estimate)
 end
 
 #p_estimate = optimise_p([0.0,0.0], 50.0).minimizer
