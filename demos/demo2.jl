@@ -2,7 +2,8 @@ using Revise
 using Test
 using ModelExploration
 using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Theories
-include("../src/Petri.jl")
+#include("../src/Petri.jl")
+include("../src/ModelSelection.jl")
 using AlgebraicPetri: LabelledPetriNetUntyped
 
 infectious_type_ = LabelledPetriNet([:Pop],
@@ -138,6 +139,6 @@ upb = unfold(pb);
 aupb = apex(upb);
 @test length(ob_generators(dom(diagram(aupb)))) == 16
 
-x = ob_map(aupb, Symbol("(X1, X1)"))
+x = ob_map(aupb, Symbol("(X3, X1)"))
 
 
