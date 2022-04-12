@@ -139,6 +139,17 @@ upb = unfold(pb);
 aupb = apex(upb);
 @test length(ob_generators(dom(diagram(aupb)))) == 16
 
-x = ob_map(aupb, Symbol("(X3, X1)"))
+true_model = ob_map(aupb, Symbol("(X3, X1)"))
+true_rxn = MakeReactionSystem(true_model)
 
+p_real = vcat(repeat([1e-4], 14), repeat([0.01], 6))
+u0 = [0.0,0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0,0.0] #|> gpu
+tspan = (0.0,250.0)
 
+sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 100)
+
+plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model)))
+plot!(sample_times, sample_data, seriestype=:scatter, label="")
+display(plt)
+
+full_train(true_model, u0, tspan, sample_data, sample_times);

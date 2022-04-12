@@ -8,13 +8,13 @@ using Plots
 
 println("Starting")
 
-SIR = LabelledPetriNet([:S, :I, :R],
+#=SIR = LabelledPetriNet([:S, :I, :R],
   :inf => ((:S, :I)=>(:I, :I)),
   :rec => (:I=>:R),
   :id => (:S => :S),
   :id => (:I => :I),
   :id => (:R => :R)
-)
+)=#
 
 get_infected_states(g::AbstractLabelledPetriNet) =
    [i for (i,s) in enumerate(g[:sname]) if occursin("I", string(s))]
@@ -37,13 +37,13 @@ function MakeReactionSystem(pn::AbstractPetriNet)
     ReactionSystem(rxs, t, S, k; name=:model)
 end
 
-SIR_rxn = MakeReactionSystem(SIR)
+#=SIR_rxn = MakeReactionSystem(SIR)
 #AlgebraicPetri.Graph(SIR)
 #Catalyst.Graph(SIR_rxn)
 
 p_real = [.1/1000, .01]
 tspan = (0.0,250.0)
-u0 = [999.0, 1.0, 0.0]
+u0 = [999.0, 1.0, 0.0]=#
 #=sample_times = range(tspan[1],stop=tspan[2],length=100)
 
 op = ODEProblem(SIR_rxn, u0, tspan, p_real)
@@ -70,7 +70,7 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
     prob = ODEProblem(MakeReactionSystem(model), u0, tspan, p)
     sol = solve(prob, Tsit5(), tstops=sample_times)
 
-    sample_vals = [sol_real.u[findfirst(sol_real.t .>= ts)][var] * (1+(0.1rand()-0.05))
+    sample_vals = [sol.u[findfirst(sol.t .>= ts)][var] * (1+(0.1rand()-0.05))
                 for var in get_infected_states(model), ts in sample_times]
 
     return map(sum, eachcol(sample_vals)), sample_times, prob, sol
@@ -104,7 +104,31 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
         return false
     end
 
-    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.1), cb=callback,=# maxiters=100)
+    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.1), cb=callback,=# maxiters=300,
+            lower_bounds=zeros(size(p_init)), upper_bounds=ones(size(p_init)))
+end
+
+function full_train(model, u0, tspan, training_data, sample_times)
+    rxn = MakeReactionSystem(model)
+    #p_estimate = zeros(numreactionparams(rxn))
+    p_estimate = repeat([1e-6], numreactionparams(rxn)-ns(model))
+    prob = ODEProblem(rxn, u0, tspan, p_estimate)
+    loss = 0
+    # TODO: algorithmically determine this range
+    for i in 50:50:250
+        res_ode = optimise_p(model, prob, p_estimate, i, training_data, sample_times)
+        p_estimate = res_ode.minimizer
+        sol_estimate = solve(remake(prob,tspan=tspan,p=p_estimate), Tsit5())
+    
+        plt = plot(sample_times, training_data, seriestype=:scatter, label="")
+        plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
+        display(plt)
+
+        println("Estimated params: $p_estimate")
+        loss = res_ode.minimum
+        println("Loss: $loss")
+    end
+    return model, loss
 end
 
 function run_param_est()
