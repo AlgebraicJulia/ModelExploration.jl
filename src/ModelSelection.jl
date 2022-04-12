@@ -104,7 +104,7 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
         return false
     end
 
-    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.1), cb=callback,=# maxiters=300,
+    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.1), cb=callback,=# maxiters=500,
             lower_bounds=zeros(size(p_init)), upper_bounds=ones(size(p_init)))
 end
 
@@ -114,6 +114,7 @@ function full_train(model, u0, tspan, training_data, sample_times)
     p_estimate = repeat([1e-6], numreactionparams(rxn)-ns(model))
     prob = ODEProblem(rxn, u0, tspan, p_estimate)
     loss = 0
+    sol_estimate = Nothing
     # TODO: algorithmically determine this range
     for i in 50:50:250
         res_ode = optimise_p(model, prob, p_estimate, i, training_data, sample_times)
@@ -124,11 +125,11 @@ function full_train(model, u0, tspan, training_data, sample_times)
         plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
         display(plt)
 
-        println("Estimated params: $p_estimate")
+        #println("Estimated params: $p_estimate")
         loss = res_ode.minimum
-        println("Loss: $loss")
+        #println("Loss: $loss")
     end
-    return model, loss
+    return  sol_estimate, loss
 end
 
 function run_param_est()

@@ -152,4 +152,47 @@ plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, 
 plot!(sample_times, sample_data, seriestype=:scatter, label="")
 display(plt)
 
-full_train(true_model, u0, tspan, sample_data, sample_times);
+#small training example to precompile everything
+full_train(SIR, [999.0,1.0,0.0], tspan, sample_data, sample_times);
+
+#assign inital concentrations to models TODO: be more smart about this
+models = [
+  ob_map(aupb, Symbol("(X1, X1)")) => [0.0, 0.0, 0.0, 999.0, 1.0, 0.0],
+  ob_map(aupb, Symbol("(X1, X2)")) => [500.0, 0.0, 0.0, 499.0, 1.0, 0.0],
+  ob_map(aupb, Symbol("(X1, X3)")) => [500.0, 1.0, 0.0, 499.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X1, X4)")) => [250.0, 1.0, 0.0, 250.0, 0.0, 0.0, 250.0, 0.0, 0.0, 249.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X2, X1)")) => [0.0, 0.0, 999.0, 1.0],
+  ob_map(aupb, Symbol("(X2, X2)")) => [500.0, 0.0, 499.0, 1.0],
+  ob_map(aupb, Symbol("(X2, X3)")) => [500.0, 1.0, 499.0, 0.0],
+  ob_map(aupb, Symbol("(X2, X4)")) => [250.0, 1.0, 250.0, 0.0, 250.0, 0.0, 249.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X1)")) => [0.0, 0.0, 0.0, 0.0, 0.0, 999.0, 1.0, 0.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X2)")) => [500.0, 0.0, 0.0, 0.0, 0.0, 499.0, 1.0, 0.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X3)")) => [500.0, 1.0, 0.0, 0.0, 0.0, 499.0, 0.0, 0.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X4)")) => [250.0, 1.0, 0.0, 0.0, 0.0,
+                                       250.0, 0.0, 0.0, 0.0, 0.0,
+                                       250.0, 0.0, 0.0, 0.0, 0.0,
+                                       249.0, 0.0, 0.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X4, X1)")) => [0.0, 0.0, 0.0, 999.0, 1.0, 0.0],
+  ob_map(aupb, Symbol("(X4, X2)")) => [500.0, 0.0, 0.0, 499.0, 1.0, 0.0],
+  ob_map(aupb, Symbol("(X4, X3)")) => [500.0, 1.0, 0.0, 499.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X4, X4)")) => [250.0, 1.0, 0.0, 250.0, 0.0, 0.0, 250.0, 0.0, 0.0, 249.0, 0.0, 0.0]
+]
+
+function explore(models, tspan, sample_data, sample_times)
+  losses = Dict{Float64, Tuple}()
+  Threads.@threads for i in 1:length(models)
+    model, u0 = models[i]
+    sol, loss = full_train(model, u0, tspan, sample_data, sample_times)
+    losses[loss] = (model, sol)
+    println(loss)
+    #=plt = plot(sol, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
+    plot!(sample_times, sample_data, seriestype=:scatter, label="")
+    display(plt)=#
+  end
+  return losses
+end
+
+#=println(min_loss)
+plt = plot(best_sol, lw=2, label=reshape(map(string, best_model[:, :sname]), 1, ns(best_model)))
+plot!(sample_times, sample_data, seriestype=:scatter, label="")
+display(plt)=#
