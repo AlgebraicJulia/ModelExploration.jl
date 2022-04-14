@@ -2,7 +2,8 @@ using Revise
 using Test
 using ModelExploration
 using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Theories
-include("../src/Petri.jl")
+#include("../src/Petri.jl")
+include("../src/ModelSelection.jl")
 using AlgebraicPetri: LabelledPetriNetUntyped
 
 infectious_type_ = LabelledPetriNet([:Pop],
@@ -126,8 +127,7 @@ One, Four = FinCat.([ThOne,ThFour])
 to_diag(x) = Diagram(FinDomFunctor(x, nothing, Four, PetriHom()))
 to_slicehom(x) = SliceDiagHom(Literal(to_diag(x)))
 
-disease_dict =
-diag_disease =to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
+diag_disease = to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
                                :X3=>SVIIvR_type,:X4=>SIR_tb_type));
 diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type,
                                :X3=>flux_m_type, :X4=>simple_t_type));
@@ -136,6 +136,73 @@ pb = PullbackSpace(to_model_hom(diag_disease), to_model_hom(diag_strata));
 upb = unfold(pb);
 aupb = apex(upb);
 @test length(ob_generators(dom(diagram(aupb)))) == 16
+
+true_model = ob_map(aupb, Symbol("(X3, X1)"))
+true_rxn = MakeReactionSystem(true_model)
+
+p_real = vcat(repeat([1e-4], 14), repeat([0.01], 6))
+u0 = [0.0,0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0,0.0] #|> gpu
+tspan = (0.0,250.0)
+
+#sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 50)=#
+
+#=true_model = SIR
+true_rxn = MakeReactionSystem(SIR)
+p_real = [.1/1000, .01]
+u0 = [999.0, 1.0, 0.0]
+tspan = (0.0,250.0)=#
+
+sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 50)
+
+plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model)))
+plot!(sample_times, sample_data, seriestype=:scatter, label="")
+display(plt)
+
+#small training example to precompile everything
+#full_train(SIR, [999.0,1.0,0.0], tspan, sample_data, sample_times);
+
+#assign inital concentrations to models TODO: be more smart about this
+models = [
+  ob_map(aupb, Symbol("(X1, X1)")) => [0.0, 0.0, 0.0, 999.0, 1.0, 0.0],
+  ob_map(aupb, Symbol("(X1, X2)")) => [500.0, 0.0, 0.0, 499.0, 1.0, 0.0],
+  # ob_map(aupb, Symbol("(X1, X3)")) => [500.0, 1.0, 0.0, 499.0, 0.0, 0.0],
+  # ob_map(aupb, Symbol("(X1, X4)")) => [250.0, 1.0, 0.0, 250.0, 0.0, 0.0, 250.0, 0.0, 0.0, 249.0, 0.0, 0.0],
+  # ob_map(aupb, Symbol("(X2, X1)")) => [0.0, 0.0, 999.0, 1.0],
+  # ob_map(aupb, Symbol("(X2, X2)")) => [500.0, 0.0, 499.0, 1.0],
+  # ob_map(aupb, Symbol("(X2, X3)")) => [500.0, 1.0, 499.0, 0.0],
+  # ob_map(aupb, Symbol("(X2, X4)")) => [250.0, 1.0, 250.0, 0.0, 250.0, 0.0, 249.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X1)")) => [0.0, 0.0, 0.0, 0.0, 0.0, 999.0, 1.0, 0.0, 0.0, 0.0],
+  ob_map(aupb, Symbol("(X3, X2)")) => [500.0, 0.0, 0.0, 0.0, 0.0, 499.0, 1.0, 0.0, 0.0, 0.0],
+  # ob_map(aupb, Symbol("(X3, X3)")) => [500.0, 1.0, 0.0, 0.0, 0.0, 499.0, 0.0, 0.0, 0.0, 0.0],
+  #ob_map(aupb, Symbol("(X3, X4)")) => [250.0, 1.0, 0.0, 0.0, 0.0,
+  #                                     250.0, 0.0, 0.0, 0.0, 0.0,
+  #                                     250.0, 0.0, 0.0, 0.0, 0.0,
+  #                                     249.0, 0.0, 0.0, 0.0, 0.0],
+  # ob_map(aupb, Symbol("(X4, X1)")) => [0.0, 0.0, 0.0, 999.0, 1.0, 0.0],
+  # ob_map(aupb, Symbol("(X4, X2)")) => [500.0, 0.0, 0.0, 499.0, 1.0, 0.0],
+  # ob_map(aupb, Symbol("(X4, X3)")) => [500.0, 1.0, 0.0, 499.0, 0.0, 0.0],
+  # ob_map(aupb, Symbol("(X4, X4)")) => [250.0, 1.0, 0.0, 250.0, 0.0, 0.0, 250.0, 0.0, 0.0, 249.0, 0.0, 0.0]
+]
+
+function explore(models, tspan, sample_data, sample_times)
+  losses = zeros(length(models))
+  Threads.@threads for i in 1:length(models)
+    model, u0 = models[i]
+    sol, loss = full_train(model, u0, tspan, sample_data, sample_times)
+    losses[i] = loss
+    println(loss)
+    #=plt = plot(sol, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
+    plot!(sample_times, sample_data, seriestype=:scatter, label="")
+    display(plt)=#
+  end
+  return losses
+end
+
+#=println(min_loss)
+plt = plot(best_sol, lw=2, label=reshape(map(string, best_model[:, :sname]), 1, ns(best_model)))
+plot!(sample_times, sample_data, seriestype=:scatter, label="")
+display(plt)=#
+
 
 # Pushout example
 Infect = LabelledPetriNet([:I],)
