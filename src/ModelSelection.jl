@@ -160,15 +160,19 @@ function full_train(model, u0, tspan, training_data, sample_times, param_guess)
         plot!(rec_vals, lw=2, label="R")
         plot!(inf_vals, lw=2, label="I")
         display(plt)=#
-        plt = plot(sample_times, training_data, seriestype=:scatter, label="")
+        #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
-        display(plt)
+        display(plt)=#
 
         println("Estimated params: $p_estimate")
         loss = res_ode.minimum
         println("Loss: $loss")
     end
     return  sol_estimate, loss
+end
+
+function stupid()
+    return "dumb"
 end
 
 function full_train(model, u0, tspan, training_data, sample_times)
@@ -194,9 +198,9 @@ function full_train(model, u0, tspan, training_data, sample_times)
         plot!(rec_vals, lw=2, label="R")
         plot!(inf_vals, lw=2, label="I")
         display(plt)=#
-        plt = plot(sample_times, training_data, seriestype=:scatter, label="")
+        #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
-        display(plt)
+        display(plt)=#
 
         println("Estimated params: $p_estimate")
         loss = res_ode.minimum
