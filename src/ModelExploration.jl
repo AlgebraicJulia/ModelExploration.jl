@@ -1,7 +1,8 @@
 module ModelExploration
 
-export Product, Literal, ModelSpace, PullbackSpace, ModelHom, SliceHom, select,
-       unfold, to_model_hom, SliceCat
+export Product, Literal, ModelSpace, PullbackSpace, ModelHom, SliceDiagHom, select,
+       unfold, to_model_hom, SliceCat, InduceHomIn, InduceHomOut, LitFG, LitNG,
+       PushoutSpace, LitModelHom
 
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra: pullback
@@ -9,7 +10,7 @@ using Catlab.Graphs, Catlab.Present
 using Catlab.Theories: attrtype
 
 #############
-const SliceCat{Ob,Hom} = TypeCat{Slice{Ob,Hom}, SliceMorphism{Ob,Hom}}
+const SliceCat{Hom} = TypeCat{Slice{Hom}, SliceHom{Hom}}
 
 abstract type ModelSpace{T,Base} end
 abstract type FunctorGen end
@@ -61,11 +62,20 @@ struct PullbackSpace{T,Base} <: ModelSpace{T,Base}
   g2::ModelSpace{T,Base}
 end
 
+struct PushoutSpace{T,Base} <: ModelSpace{T,Base}
+  g1::ModelSpace{T,Base}
+  g2::ModelSpace{T,Base}
+end
+function LitModelHom(d::DiagramHom)
+  ModelHom(Literal(dom(d)), Literal(codom(d)),
+           LitFG(shape_map(d)),
+           LitNG(Dict(collect(components(diagram_map(d))))))
+end
 struct LitFG <: FunctorGen
   lit::Functor
 end
 struct LitNG <: NatGen
-  lit::Dict
+  lit::AbstractDict
 end
 struct UniqueFG <: FunctorGen end
 struct UniqueNG <: NatGen end
@@ -83,18 +93,46 @@ category.
 For example, Diagram{T,Petri/X} is converted into DiagramHom{T,Petri}, where
 the codomain has shape • and sends that to the Petri net X.
 """
-struct SliceHom{T,BaseOb,BaseHom} <: ModelSpace{T,SliceCat{BaseOb,BaseHom}}
-  slice_diagram::ModelSpace{T,SliceCat{BaseOb,BaseHom}}
+struct SliceDiagHom{T,BaseHom} <: ModelSpace{T,SliceCat{BaseHom}}
+  slice_diagram::ModelSpace{T,SliceCat{BaseHom}}
 end
+
+"""
+One may have a diagram homomorphism into A, but want to apply it to some
+composite of limits/colimits involving A.
+
+For example, a map X->A would induce a map into X->A+B
+And a map X->A would induce a map XxB -> AxB
+"""
+struct InduceHomIn
+  F::ModelHom
+  P::ModelSpace
+end
+
+"""
+One may have a diagram homomorphism out of A, but want to apply it to some
+composite of limits/colimits involving A.
+
+For example, a map A->X would induce a map into A+B->X+B
+And a map A->X would induce a map AxB -> X
+"""
+struct InduceHomOut
+  F::ModelHom
+  P::ModelSpace
+end
+
+
+
+############################################################################
 
 @present ThOne(FreeSchema) begin
   X::Ob
 end
 One = FinCat(ThOne)
-
+##########################################################################
 unfold(g::Literal)::Diagram = g.lit
 
-function unfold(g::SliceHom)::Diagram
+function unfold(g::SliceDiagHom)::Diagram
   res = unfold(g.slice_diagram)
   for ob in values(ob_map(diagram(res)))
     is_natural(ob.slice) || error("Not natural")
@@ -105,8 +143,8 @@ end
 """
 Generate the data of a diagram homomorphism from a slice hom
 """
-function to_model_hom(g::SliceHom{T,BaseOb,BaseHom}) where {T,BaseOb,BaseHom}
-  Base = TypeCat{BaseOb,BaseHom}
+function to_model_hom(g::SliceDiagHom{T,BaseHom}) where {T,BaseHom}
+  Base = TypeCat{T, BaseHom}
   slicehom = diagram(unfold(g)) # underlying functor of diagram
   d_ob = Dict(map(collect(ob_map(slicehom))) do (k, v)
     k => dom(v.slice)
@@ -126,7 +164,6 @@ function to_model_hom(g::SliceHom{T,BaseOb,BaseHom}) where {T,BaseOb,BaseHom}
   ModelHom{T,Base}(Literal{T,Base}(d), Literal{T,Base}(cod),
                    LitFG(shape_m), LitNG(diagram_m),)
 end
-
 
 unfold(l::LitFG) = l.lit
 unfold(l::LitNG) = l.lit
@@ -156,10 +193,17 @@ end=#
   return models
 end=#
 
-function unfold(g::PullbackSpace{T,Base})::DiagLimit where {T,Base}
+# returns a diag limit
+function unfold(g::PullbackSpace{T,Base}) where {T,Base}
   pb = pullback(Multicospan([unfold(g.g1), unfold(g.g2)]))
   return pb
 end
+
+function unfold(g::PushoutSpace{T,Base}) where {T,Base}
+  pb = pushout(Multispan([unfold(g.g1), unfold(g.g2)]))
+  return pb
+end
+
 
 function select(g::ModelSpace, lossFn::Function)::StructACSet
 

@@ -14,7 +14,7 @@ infectious_type = map(infectious_type_, Name=name->nothing)
 
 IO_help(i::Int) = let d = Dict([j=>j%2+1 for j in 1:2*i]); (I=d,O=d) end
 make_slice(p::LabelledPetriNet, n::NamedTuple) =
-    Slice{LabelledPetriNet,ACSetTransformation}(
+    Slice{ACSetTransformation}(
         homomorphism(p, infectious_type; initial=n,
                        type_components=(Name=x->nothing,)))
 
@@ -119,21 +119,39 @@ end
 const ACSetCat{S} = TypeCat{S, ACSetTransformation}
 const ACSetCatSlice{S} = TypeCat{S, ACSetTransformation}
 const Petri = ACSetCat{LabelledPetriNet}
-const PetriHom = SliceCat{LabelledPetriNet,ACSetTransformation}
+const PetriHom = SliceCat{ACSetTransformation}
 
 One, Four = FinCat.([ThOne,ThFour])
 
-to_slicehom(x) = SliceHom(Literal(Diagram(
-  FinDomFunctor(x, nothing, Four, PetriHom()))))
+to_diag(x) = Diagram(FinDomFunctor(x, nothing, Four, PetriHom()))
+to_slicehom(x) = SliceDiagHom(Literal(to_diag(x)))
 
+disease_dict =
 diag_disease =to_slicehom(Dict(:X1=>SIR_type,:X2=>SIS_type,
                                :X3=>SVIIvR_type,:X4=>SIR_tb_type));
 diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type,
                                :X3=>flux_m_type, :X4=>simple_t_type));
 
-mh1 = to_model_hom(diag_disease)
-mh2 = to_model_hom(diag_strata)
-pb = PullbackSpace(mh1, mh2);
+pb = PullbackSpace(to_model_hom(diag_disease), to_model_hom(diag_strata));
 upb = unfold(pb);
 aupb = apex(upb);
 @test length(ob_generators(dom(diagram(aupb)))) == 16
+
+# Pushout example
+Infect = LabelledPetriNet([:I],)
+Death = LabelledPetriNet([:I,:D],     :death => (:I => :D))
+ISIR = only(homomorphisms(Infect, SIR))
+IID = only(homomorphisms(Infect, Death))
+
+I = Diagram(FinDomFunctor(Dict(:X=>Infect), nothing, One, Petri()))
+D = FinDomFunctor(Dict(:X1=>SIR,:X2=>SIS,:X3=>SVIIvR,:X4=>SIR_travel_ban),
+                  nothing, Four,Petri())
+ID = LitModelHom(DiagramHom(FinFunctor(Dict(:X=>:X1), nothing, One, Four), Dict(:X=>ISIR),
+                  I, Diagram(D)))
+Q = Diagram(FinDomFunctor(Dict(:X=>Death), nothing, One, Petri()))
+IQ = LitModelHom(DiagramHom(id(One),Dict(:X=>IID),I,Q))
+
+#po = PushoutSpace(ID,IQ) # fails b/c no chase of ACSets only C-sets
+                          # and no FinCats with Attr
+
+# a pushout over a product space: (A+B*C) = A+B * A+C
