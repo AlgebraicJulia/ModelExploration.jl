@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 915f4df0-bc3a-11ec-2560-c9772e143679
 begin 
-	using Pkg, Revise
+	using Pkg#, Revise
 	Pkg.activate(Base.current_project())
 	Pkg.instantiate()
 	using Catlab.CategoricalAlgebra
@@ -16,8 +16,13 @@ begin
     using ModelExploration
 	using Plots
 	using Test
+	using Logging
 	include("../src/ModelSelection.jl")
-end
+	Logging.disable_logging(Logging.Warn)
+end;
+
+# ╔═╡ 6b70e364-152e-49c4-ae1b-381cbbcb6fc3
+md"""Define typing system for models"""
 
 # ╔═╡ 4dcde238-98a4-4982-9409-cc486a70b1e8
 begin
@@ -28,17 +33,20 @@ begin
 	
 	infectious_type = map(infectious_type_, Name=name->nothing)
 	
-	Graph(infectious_type)
+	Graph(infectious_type_)
 end
 
 # ╔═╡ e2e3c56d-3350-4ca8-b073-6e6b027ca984
-IO_help(i::Int) = let d = Dict([j=>j%2+1 for j in 1:2*i]); (I=d,O=d) end
+IO_help(i::Int) = let d = Dict([j=>j%2+1 for j in 1:2*i]); (I=d,O=d) end;
 
 # ╔═╡ 179b3378-66ff-43b9-920a-100c48b65a40
 make_slice(p::LabelledPetriNet, n::NamedTuple) =
     Slice{ACSetTransformation}(
         homomorphism(p, infectious_type; initial=n,
                        type_components=(Name=x->nothing,)))
+
+# ╔═╡ 712853b5-a679-4c5e-a47b-34af8ee8ea0b
+md"""Define petri nets for disease dynamics dimension"""
 
 # ╔═╡ 45511aa5-4a45-4d30-94c7-bc47c7fbfe58
 begin
@@ -73,6 +81,9 @@ begin
 	SVIIvR_type = make_slice(SVIIvR, merge((T=[1,1,1,1,2,2,2,3,3,3,3,3],),IO_help(4)))
 	Graph(SVIIvR)
 end
+
+# ╔═╡ 78d94905-418c-4cfc-91c5-9dac9bcd4049
+md"""Define petri nets for stratification dimension"""
 
 # ╔═╡ 6f2b8b20-a866-49cd-be09-f659269cbcc3
 begin
@@ -118,20 +129,35 @@ begin
 	
 	to_diag(x) = Diagram(FinDomFunctor(x, nothing, Two, PetriHom()))
 	to_slicehom(x) = SliceDiagHom(Literal(to_diag(x)))
-end
+end;
+
+# ╔═╡ cc7a7deb-af14-4d15-a444-7a021d765168
+md"""Construct the model space as the product of two dimensions"""
 
 # ╔═╡ cea17847-544d-4b9d-89a2-2f2a5337df8b
 begin
-	diag_disease = to_slicehom(Dict(:X1=>SIR_type,:X2=>SVIIvR_type));
+	diag_disease = to_slicehom(Dict(:X1=>SIR_type, :X2=>SVIIvR_type));
 	diag_strata = to_slicehom(Dict(:X1=>quarantine_type, :X2=>age_s_type));
-end
+end;
 
 # ╔═╡ c5578104-3cbc-4f3d-b468-dfb702759f89
 begin
+	# This object contains the recipe to build the composite model space
 	pb = PullbackSpace(to_model_hom(diag_disease), to_model_hom(diag_strata));
+	# This function evaluates the recipe
 	upb = unfold(pb);
+	# This discard the projection maps, just keeps the product models
 	aupb = apex(upb);
 end;
+
+# ╔═╡ 5a4b68ce-0546-43ac-911a-00e638b0b0df
+md"""For example, combining SIR with quarantine gives us two copies of SIR (one quarantined, one not) with enter/exit quarantine transitions for each"""
+
+# ╔═╡ 131476ed-ed71-4d5f-9fc0-708f1490c19d
+Graph(ob_map(aupb, Symbol("(X1, X1)")))
+
+# ╔═╡ 3dcc4486-0961-44ee-ad90-0c286972fa12
+md"""Simulate a trajectory based on the combination of the vaccinated model + quarantine. Arbitrary but realistic parameters, 250 time steps."""
 
 # ╔═╡ e15eb36c-1f27-4394-98e9-77a96b75282b
 begin
@@ -139,9 +165,12 @@ begin
 	true_rxn = MakeReactionSystem(true_model)
 	
 	p_real = vcat(repeat([1e-4], 14), repeat([0.01], 6))
-	u0 = [0.0,0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0,0.0] #|> gpu
+	p_real = vcat([1.1e-4,1.3e-4,1.2e-4,1.4e-4,1.5e-4,1.2e-4,
+				   1.e-4,1.3e-4,1.5e-4,1.2e-4,1.7e-4,1.6e-4,
+		           1.2e-4,1.1e-4,], [0.01,0.02,0.01,0.01,0.01,0.02])
+	u0 = [0.0,0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0,0.0] 
 	tspan = (0.0,250.0)
-end
+end;
 
 # ╔═╡ 1f47a2fb-8311-45c0-a178-93ddfe7cbcbf
 begin
@@ -151,90 +180,121 @@ begin
 	plot!(sample_times, sample_data, seriestype=:scatter, label="")
 end
 
-# ╔═╡ 4fa7b851-389d-4341-845b-6bf64729edf3
-models = [
-  ob_map(aupb, Symbol("(X1, X1)")) => [0.0, 0.0, 0.0, 999.0, 1.0, 0.0],
-  ob_map(aupb, Symbol("(X1, X2)")) => [500.0, 0.0, 0.0, 499.0, 1.0, 0.0],
-  ob_map(aupb, Symbol("(X2, X1)")) => [0.0, 0.0, 0.0, 0.0, 0.0, 999.0, 1.0, 0.0, 0.0, 0.0],
-  ob_map(aupb, Symbol("(X2, X2)")) => [500.0, 0.0, 0.0, 0.0, 0.0, 499.0, 1.0, 0.0, 0.0, 0.0]
-];
+# ╔═╡ b44ff4bc-92c3-4312-aad3-c1d0878cdf46
+md"""Equip models with initial guesses ![](https://i.imgur.com/VKwUP9w.png)
+"""
+
+# ╔═╡ 8a0d7fb4-49f5-47be-a890-ea7900ddc58d
+begin 
+	
+disease_initial = (S=999., I=1., R=0.,V=0.,Iv=0.) 
+strata_initial = (Q=0., not_Q=1.,Child=0.5,Adult=0.5)
+	
+models = map(ob_generators(dom(diagram(aupb)))) do o
+	model = ob_map(aupb, o)
+	init_pop =  [disease_initial[n1] * strata_initial[n2] 
+				 for (n1, n2) in model[:sname]]
+	model => init_pop
+end
+end;
 
 # ╔═╡ f3b0d954-2eef-4f21-9ba5-fd32a2fbdfb8
 function explore(models, tspan, sample_data, sample_times)
   losses = zeros(length(models))
   sols = repeat(Any[nothing], length(models))
-  println(typeof(sols))
   Threads.@threads for i in 1:length(models)
     model, u0 = models[i]
     sol, loss = full_train(model, u0, tspan, sample_data, sample_times)
     losses[i] = loss
-    #println(loss)
 	sols[i] = sol
   end
   return losses, sols
-end
+end;
+
+# ╔═╡ 5e12700b-d7d9-44c3-9728-71d3c08b18c1
+md"""Optimizing all models can take minutes"""
 
 # ╔═╡ 3466eca0-f9d6-4ecf-9eeb-5b9eddc2d061
 losses, sols = explore(models, tspan, sample_data, sample_times);
 
-# ╔═╡ 98255319-3eb6-4467-ba55-4fd14cd54bef
-begin
+# ╔═╡ 6e81b7d5-f225-42ee-a60d-9076c274a33b
+function plot_res(i::Int)
 	plot(sample_times, sample_data, seriestype=:scatter, label="")
-	        plot!(sols[1], lw=2, label=reshape(map(string, models[1][1][:, :sname]), 1, ns(models[1][1])))
-end
+	        plot!(sols[i], lw=2, label=reshape(map(string, models[i][1][:, :sname]), 1, ns(models[i][1])))
+end;
+
+# ╔═╡ da5ab695-e5c3-49b7-b849-afb03a81c598
+md"""Model (1,1)"""
 
 # ╔═╡ 4cd3c2f4-5ecb-45f5-b6e0-cbeab132da3a
 losses[1]
 
-# ╔═╡ c56b1786-96f1-4969-ae8f-533fc0a628eb
-begin
-	plot(sample_times, sample_data, seriestype=:scatter, label="")
-	        plot!(sols[2], lw=2, label=reshape(map(string, models[2][1][:, :sname]), 1, ns(models[2][1])))
-end
+# ╔═╡ 90ee4cd1-2957-49cf-8f29-fb0c26db3219
+plot_res(1)
+
+# ╔═╡ 5d3ae1b2-969a-407c-af4f-452212e4c6f8
+md"""Model (1,2)"""
 
 # ╔═╡ 9858e6fc-60a6-417a-8092-280ecd9c139c
-losses[2]
+losses[3]
 
-# ╔═╡ f4d7151c-35ef-4d74-a2c2-4f3e54c4461a
-begin
-	plot(sample_times, sample_data, seriestype=:scatter, label="")
-	        plot!(sols[4], lw=2, label=reshape(map(string, models[4][1][:, :sname]), 1, ns(models[4][1])))
-end
+# ╔═╡ a9d58251-e0f3-4a77-8b0e-afd4f24c31c4
+plot_res(3)
+
+# ╔═╡ b836c19d-b5aa-45d1-8487-586042cbcda2
+md"""Model (2,2)"""
 
 # ╔═╡ 65cf7a22-c2ca-4a44-9671-51aab7a0f644
 losses[4]
 
-# ╔═╡ e5cbb97b-a320-4835-97f1-7ff781a55998
-begin
-	plot(sample_times, sample_data, seriestype=:scatter, label="")
-	        plot!(sols[3], lw=2, label=reshape(map(string, models[3][1][:, :sname]), 1, ns(models[3][1])))
-end
+# ╔═╡ 8e5b3b93-d023-4e79-b174-1356b560fd20
+plot_res(4)
+
+# ╔═╡ a47b8757-8723-4dfe-a81c-6adf6981f356
+md"""Model (2,1): The correct model"""
 
 # ╔═╡ 5999a061-ca85-4002-9b72-5e26bfc97939
-losses[3]
+losses[2]
+
+# ╔═╡ 3322866c-61bd-40c0-9a59-50610fe37a0d
+plot_res(2)
 
 # ╔═╡ Cell order:
 # ╠═915f4df0-bc3a-11ec-2560-c9772e143679
+# ╟─6b70e364-152e-49c4-ae1b-381cbbcb6fc3
 # ╠═4dcde238-98a4-4982-9409-cc486a70b1e8
-# ╠═e2e3c56d-3350-4ca8-b073-6e6b027ca984
-# ╠═179b3378-66ff-43b9-920a-100c48b65a40
+# ╟─e2e3c56d-3350-4ca8-b073-6e6b027ca984
+# ╟─179b3378-66ff-43b9-920a-100c48b65a40
+# ╟─712853b5-a679-4c5e-a47b-34af8ee8ea0b
 # ╠═45511aa5-4a45-4d30-94c7-bc47c7fbfe58
 # ╠═eedc21a6-5bcd-47e4-8e1b-814c232ab479
+# ╟─78d94905-418c-4cfc-91c5-9dac9bcd4049
 # ╠═6f2b8b20-a866-49cd-be09-f659269cbcc3
 # ╠═075fa8b1-b45c-43b4-8c24-151cbd3ac7f9
-# ╠═63596b64-b7aa-42ed-a980-99a684c98d4b
+# ╟─63596b64-b7aa-42ed-a980-99a684c98d4b
+# ╟─cc7a7deb-af14-4d15-a444-7a021d765168
 # ╠═cea17847-544d-4b9d-89a2-2f2a5337df8b
 # ╠═c5578104-3cbc-4f3d-b468-dfb702759f89
+# ╟─5a4b68ce-0546-43ac-911a-00e638b0b0df
+# ╠═131476ed-ed71-4d5f-9fc0-708f1490c19d
+# ╟─3dcc4486-0961-44ee-ad90-0c286972fa12
 # ╠═e15eb36c-1f27-4394-98e9-77a96b75282b
 # ╠═1f47a2fb-8311-45c0-a178-93ddfe7cbcbf
-# ╠═4fa7b851-389d-4341-845b-6bf64729edf3
-# ╠═f3b0d954-2eef-4f21-9ba5-fd32a2fbdfb8
+# ╟─b44ff4bc-92c3-4312-aad3-c1d0878cdf46
+# ╠═8a0d7fb4-49f5-47be-a890-ea7900ddc58d
+# ╟─f3b0d954-2eef-4f21-9ba5-fd32a2fbdfb8
+# ╟─5e12700b-d7d9-44c3-9728-71d3c08b18c1
 # ╠═3466eca0-f9d6-4ecf-9eeb-5b9eddc2d061
-# ╠═98255319-3eb6-4467-ba55-4fd14cd54bef
-# ╠═4cd3c2f4-5ecb-45f5-b6e0-cbeab132da3a
-# ╠═c56b1786-96f1-4969-ae8f-533fc0a628eb
-# ╠═9858e6fc-60a6-417a-8092-280ecd9c139c
-# ╠═f4d7151c-35ef-4d74-a2c2-4f3e54c4461a
-# ╠═65cf7a22-c2ca-4a44-9671-51aab7a0f644
-# ╠═e5cbb97b-a320-4835-97f1-7ff781a55998
-# ╠═5999a061-ca85-4002-9b72-5e26bfc97939
+# ╠═6e81b7d5-f225-42ee-a60d-9076c274a33b
+# ╟─da5ab695-e5c3-49b7-b849-afb03a81c598
+# ╟─4cd3c2f4-5ecb-45f5-b6e0-cbeab132da3a
+# ╠═90ee4cd1-2957-49cf-8f29-fb0c26db3219
+# ╟─5d3ae1b2-969a-407c-af4f-452212e4c6f8
+# ╟─9858e6fc-60a6-417a-8092-280ecd9c139c
+# ╠═a9d58251-e0f3-4a77-8b0e-afd4f24c31c4
+# ╟─b836c19d-b5aa-45d1-8487-586042cbcda2
+# ╟─65cf7a22-c2ca-4a44-9671-51aab7a0f644
+# ╠═8e5b3b93-d023-4e79-b174-1356b560fd20
+# ╟─a47b8757-8723-4dfe-a81c-6adf6981f356
+# ╟─5999a061-ca85-4002-9b72-5e26bfc97939
+# ╠═3322866c-61bd-40c0-9a59-50610fe37a0d
