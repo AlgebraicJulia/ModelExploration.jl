@@ -46,8 +46,8 @@ SIS_type = make_slice(SIS, merge((T=[1,2,3,3],),IO_help(1)))
 #
 SVIIvR = LabelledPetriNet([:S, :I, :R, :Iv, :V],
   :inf => ((:S, :I)=>(:I, :I)),
-  :inf => ((:V,:I)=>(:I,:I)),
-  :inf => (:S, :Iv) => (:Iv,:Iv),
+  :inf => ((:V,:I)=>(:Iv,:I)),
+  :inf => (:S, :Iv) => (:I,:Iv),
   :inf => ((:V, :Iv) => (:Iv,:Iv)),
   :rec => (:I=>:R),
   :rec => (:Iv=>:R),
@@ -142,7 +142,12 @@ true_rxn = MakeReactionSystem(true_model)
 
 p_real = vcat(repeat([1e-4], 14), repeat([0.01], 6))
 u0 = [0.0,0.0,0.0,0.0,0.0,999.0,1.0,0.0,0.0,0.0] #|> gpu
-tspan = (0.0,250.0)
+
+#=true_model = ob_map(aupb, Symbol("(X2, X2)"))
+true_rxn = MakeReactionSystem(true_model)
+p_real = [2e-4,2e-4,2e-4,4e-2,6e-2]
+u0 = [500.0, 0.0, 499.0, 1.0]=#
+tspan = (0.0,100.0)
 
 #sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 50)=#
 
@@ -155,8 +160,11 @@ tspan = (0.0,250.0)=#
 sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 50)
 
 plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model)))
-plot!(sample_times, sample_data, seriestype=:scatter, label="")
+plot!(sample_times, sample_data[:,1:2:3], seriestype=:scatter, label="")
 display(plt)
+
+minimize_Imax(true_model, u0, tspan, sample_times, 
+  rates=Dict(1=>1e-3, 2=>1e-3, 3=>1e-3, 4=>1e-3, 15=>1e-3, 16=>1e-3, 18=>1e-3, 19=>1e-3), target=250)
 
 #small training example to precompile everything
 #full_train(SIR, [999.0,1.0,0.0], tspan, sample_data, sample_times);
@@ -205,7 +213,7 @@ display(plt)=#
 
 
 # Pushout example
-Infect = LabelledPetriNet([:I],)
+#=Infect = LabelledPetriNet([:I],)
 Death = LabelledPetriNet([:I,:D],     :death => (:I => :D))
 ISIR = only(homomorphisms(Infect, SIR))
 IID = only(homomorphisms(Infect, Death))
@@ -221,4 +229,4 @@ IQ = LitModelHom(DiagramHom(id(One),Dict(:X=>IID),I,Q))
 #po = PushoutSpace(ID,IQ) # fails b/c no chase of ACSets only C-sets
                           # and no FinCats with Attr
 
-# a pushout over a product space: (A+B*C) = A+B * A+C
+# a pushout over a product space: (A+B*C) = A+B * A+C=#

@@ -8,13 +8,10 @@ using Plots
 
 println("Starting")
 
-#=SIR = LabelledPetriNet([:S, :I, :R],
+SIR = LabelledPetriNet([:S, :I, :R],
   :inf => ((:S, :I)=>(:I, :I)),
-  :rec => (:I=>:R),
-  :id => (:S => :S),
-  :id => (:I => :I),
-  :id => (:R => :R)
-)=#
+  :rec => (:I=>:R)
+)
 
 get_infected_states(g::AbstractLabelledPetriNet) =
    [i for (i,s) in enumerate(g[:sname]) if occursin("I", string(s))]
@@ -94,6 +91,33 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
     return hcat(total_inf_samples, total_rec_samples, total_susc_samples), sample_times, prob, sol
 end
 
+function minimize_Imax(model::AbstractLabelledPetriNet, u0, tspan, sample_times; rates=Dict(), target=0)
+    rxn = MakeReactionSystem(model)
+    tend = tspan[2]
+    p_init = repeat([1e-5], numreactionparams(rxn)-ns(model))
+    op = ODEProblem(rxn, u0, tspan, p_init)
+    loss = function (p)
+        for (k,v) in rates
+            p[k] = v
+        end
+        sol = solve(remake(op,tspan=tspan,p=p), Tsit5(), tstops=sample_times)
+        vals = hcat(map(ts -> sol.u[findfirst(sol.t .>= ts)], sample_times[1:findlast(sample_times .<= tend)])...)
+        inf_vals = map(sum, collect(zip([vals[i,:] for i in get_infected_states(model)]...)))
+        Imax = findmax(inf_vals)[1]
+        #return sum(abs2, inf_vals), sol
+        return abs2(target - Imax), sol
+    end
+    callback = function (p, l, pred)
+        display(l)
+        plt = plot(pred, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
+        #plot!(sample_times, sample_vals', seriestype=:scatter, label="")
+        display(plt)
+        return false
+    end
+    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.05),=# cb=callback, maxiters=100, #=abstol=1e-4, reltol=1e-4,=#
+            lower_bounds=repeat([1e-6], length(p_init)), upper_bounds=ones(length(p_init)))
+end
+
 
 function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_data, sample_times)
     # Loss on all populations
@@ -120,8 +144,8 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
         susc_vals = map(sum, collect(zip([vals[i,:] for i in get_susceptible_states(model)]...)))
         susc_loss = sum(abs2, susc_vals .- susc_samples[1:size(susc_vals)[1]])
 
-        rec_vals = map(sum, collect(zip([vals[i,:] for i in get_recovered_states(model)]...)))
-        rec_loss = sum(abs2, susc_vals .- rec_samples[1:size(rec_vals)[1]])
+        #rec_vals = map(sum, collect(zip([vals[i,:] for i in get_recovered_states(model)]...)))
+        #rec_loss = sum(abs2, susc_vals .- rec_samples[1:size(rec_vals)[1]])
         return susc_loss + inf_loss, sol
     end
 
@@ -133,7 +157,7 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
         return false
     end
 
-    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.05), cb=callback,=# maxiters=500, abstol=1e-4, reltol=1e-4,
+    return DiffEqFlux.sciml_train(loss, p_init, #=ADAM(0.05), cb=callback,=# maxiters=500, #=abstol=1e-4, reltol=1e-4,=#
             lower_bounds=repeat([1e-6], length(p_init)), upper_bounds=ones(length(p_init)))
 end
 
@@ -152,7 +176,7 @@ function full_train(model, u0, tspan, training_data, sample_times, param_guess)
         sol_estimate = solve(remake(prob,tspan=tspan,p=p_estimate), Tsit5())
         
         susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
-        rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
+        #rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
         inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
 
         #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
@@ -160,9 +184,9 @@ function full_train(model, u0, tspan, training_data, sample_times, param_guess)
         plot!(rec_vals, lw=2, label="R")
         plot!(inf_vals, lw=2, label="I")
         display(plt)=#
-        #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
+        plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
-        display(plt)=#
+        display(plt)
 
         println("Estimated params: $p_estimate")
         loss = res_ode.minimum
@@ -184,13 +208,13 @@ function full_train(model, u0, tspan, training_data, sample_times)
     loss = 0
     sol_estimate = Nothing
     # TODO: algorithmically determine this range
-    for i in 50:50:250
+    for i in 200:50:250
         res_ode = optimise_p(model, prob, p_estimate, i, training_data, sample_times)
         p_estimate = res_ode.minimizer
         sol_estimate = solve(remake(prob,tspan=tspan,p=p_estimate), Tsit5())
         
         susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
-        rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
+        #rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
         inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
 
         #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
@@ -198,9 +222,9 @@ function full_train(model, u0, tspan, training_data, sample_times)
         plot!(rec_vals, lw=2, label="R")
         plot!(inf_vals, lw=2, label="I")
         display(plt)=#
-        #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
+        plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(sol_estimate, lw=2, label=reshape(map(string, model[:, :sname]), 1, ns(model)))
-        display(plt)=#
+        display(plt)
 
         println("Estimated params: $p_estimate")
         loss = res_ode.minimum
