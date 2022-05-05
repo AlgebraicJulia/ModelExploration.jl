@@ -154,12 +154,12 @@ tspan = (0.0,250.0)=#
 
 sample_data, sample_times, prob_real, sol_real = generate_data(true_model, p_real, u0, tspan, 50)
 
-plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model)))
+#=plt = plot(sol_real, lw=2, label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model)))
 plot!(sample_times, sample_data, seriestype=:scatter, label="")
-display(plt)
+display(plt)=#
 
 #small training example to precompile everything
-#full_train(SIR, [999.0,1.0,0.0], tspan, sample_data, sample_times);
+full_train(SIR, [999.0,1.0,0.0], tspan, sample_data, sample_times);
 
 #assign inital concentrations to models TODO: be more smart about this
 models = [
@@ -205,7 +205,7 @@ display(plt)=#
 
 
 # Pushout example
-Infect = LabelledPetriNet([:I],)
+#=Infect = LabelledPetriNet([:I],)
 Death = LabelledPetriNet([:I,:D],     :death => (:I => :D))
 ISIR = only(homomorphisms(Infect, SIR))
 IID = only(homomorphisms(Infect, Death))
@@ -221,4 +221,4 @@ IQ = LitModelHom(DiagramHom(id(One),Dict(:X=>IID),I,Q))
 #po = PushoutSpace(ID,IQ) # fails b/c no chase of ACSets only C-sets
                           # and no FinCats with Attr
 
-# a pushout over a product space: (A+B*C) = A+B * A+C
+# a pushout over a product space: (A+B*C) = A+B * A+C=#

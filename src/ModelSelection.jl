@@ -4,6 +4,8 @@ using Catalyst
 using OrdinaryDiffEq
 using DiffEqFlux #=, Flux=#
 using Plots
+using CSV
+using DataFrames
 #import Catalyst: ReactionSystem
 
 println("Starting")
@@ -154,7 +156,7 @@ function full_train(model, u0, tspan, training_data, sample_times, param_guess)
         susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
         rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
         inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
-
+        
         #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(susc_vals, lw=2, label="S")
         plot!(rec_vals, lw=2, label="R")
@@ -188,11 +190,24 @@ function full_train(model, u0, tspan, training_data, sample_times)
         res_ode = optimise_p(model, prob, p_estimate, i, training_data, sample_times)
         p_estimate = res_ode.minimizer
         sol_estimate = solve(remake(prob,tspan=tspan,p=p_estimate), Tsit5())
-        
-        susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
-        rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
-        inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
+        if i == 250
+            susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
+            rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
+            inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
 
+            df = DataFrame(
+                :times=>sample_times, 
+                :S_vals=>susc_vals, 
+                :I_vals=>inf_vals, 
+                :R_vals=>rec_vals, 
+                :loss=>res_ode.minimum,
+                :params=>p_estimate
+            )
+
+            fname = string(map(string, model[:, :sname])..., ".csv")
+
+            CSV.write(fname, df)
+        end
         #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(susc_vals, lw=2, label="S")
         plot!(rec_vals, lw=2, label="R")
