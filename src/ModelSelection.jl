@@ -93,6 +93,9 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
 
     total_rec_samples = map(sum, eachcol(rec_sample_vals))
 
+    df = DataFrame(:times=>sample_times, :S_samples=>total_susc_samples, :I_samples=>total_inf_samples, :R_samples=>total_rec_samples)
+    CSV.write("sample_data.csv", df)
+
     return hcat(total_inf_samples, total_rec_samples, total_susc_samples), sample_times, prob, sol
 end
 
@@ -196,17 +199,21 @@ function full_train(model, u0, tspan, training_data, sample_times)
             inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
 
             df = DataFrame(
-                :times=>sample_times, 
+                #:times=>sample_times, 
                 :S_vals=>susc_vals, 
                 :I_vals=>inf_vals, 
                 :R_vals=>rec_vals, 
-                :loss=>res_ode.minimum,
-                :params=>p_estimate
+                #:loss=>res_ode.minimum,
+                #:params=>p_estimate
             )
 
-            fname = string(map(string, model[:, :sname])..., ".csv")
+            fname = string(map(string, model[:, :sname])...)
 
-            CSV.write(fname, df)
+            CSV.write(string(fname, "_traj.csv"), df)
+	    
+	    open(string(fname, "_params.txt"), "w") do io
+	        write(io, "Params: $p_estimate \nLoss: $(res_ode.minimum)")
+	    end
         end
         #=plt = plot(sample_times, training_data, seriestype=:scatter, label="")
         plot!(susc_vals, lw=2, label="S")
