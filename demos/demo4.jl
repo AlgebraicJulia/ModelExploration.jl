@@ -94,14 +94,15 @@ SIRSD2 = LabelledPetriNet([:S1, :I1, :R1, :D1, :S2, :I2, :R2, :D2],
     :R21 =>  (:R2=>:R1),
 )
 
-models = [SIR, SIRS, SIRD, SIRSD, SIR2, SIRS2, SIRD2, SIRSD2]
-tspan = (0.0, 50.0)
-p = repeat([1e-4], 12)
-#p = [.001, .002, .01, .02, .0005, .0001, .01, 0.02, 0.01, .02, 0.02, 0.02]  #repeat([0.001], 12)
-u0 = [500.0, 1.0, 0.0, 0.0, 100.0, 1.0, 0.0, 0.0]
+models = [SIR, SIRS, SIRD, SIRSD, SIR2, SIRS2, SIRD2, SIRSD2];
+tspan = (0.0, 50.0);
+#p = repeat([1e-4], 12)
+p = [.001, .002, .01, .02, .005, .01, .005, 0.01, 0.0025, .001, 0.001, 0.01];
+u0 = [400.0, 10.0, 0.0, 0.0, 200.0, 0.0, 0.0, 0.0];
 
 # Generate data
-true_model = SIRD2
-sample_data, sample_times, prob, sol = generate_data(true_model, p, u0, tspan, 50)
+true_model = SIRD2;
+sample_data, sample_times, prob, sol = generate_data(true_model, p, u0, tspan, 50);
 
-#plot(sol)
+label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model))
+plot(sol; label=label)
