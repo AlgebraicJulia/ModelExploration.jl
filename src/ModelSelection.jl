@@ -199,7 +199,7 @@ function full_train(model, u0, tspan, training_data, sample_times)
             inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
 
             df = DataFrame(
-                #:times=>sample_times, 
+                :times=>sol_estimate.t, 
                 :S_vals=>susc_vals, 
                 :I_vals=>inf_vals, 
                 :R_vals=>rec_vals, 
