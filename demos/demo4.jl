@@ -2,7 +2,7 @@ using Revise
 using Test
 using ModelExploration
 using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Theories
-using Plots
+using Plots; unicodeplots()
 #include("../src/Petri.jl")
 include("../src/ModelSelection.jl")
 using AlgebraicPetri: LabelledPetriNetUntyped
@@ -106,3 +106,5 @@ sample_data, sample_times, prob, sol = generate_data(true_model, p, u0, tspan, 5
 
 label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model))
 plot(sol; label=label)
+
+

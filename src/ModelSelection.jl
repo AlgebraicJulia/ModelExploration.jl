@@ -27,6 +27,9 @@ get_susceptible_states(g::AbstractLabelledPetriNet) =
 get_recovered_states(g::AbstractLabelledPetriNet) =
    [i for (i,s) in enumerate(g[:sname]) if occursin("R", string(s)) || occursin("V", string(s))]
 
+get_dead_states(g::AbstractLabelledPetriNet) = 
+    [i for (i,s) in enumerate(g[:sname]) if occursin("D", string(s))]
+
 counter(a) = [count(==(i),a) for i in unique(a)]
 function MakeReactionSystem(pn::AbstractPetriNet)
     @parameters t k[1:(nt(pn) + ns(pn))]
@@ -93,10 +96,21 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
 
     total_rec_samples = map(sum, eachcol(rec_sample_vals))
 
-    df = DataFrame(:times=>sample_times, :S_samples=>total_susc_samples, :I_samples=>total_inf_samples, :R_samples=>total_rec_samples)
+    dead_sample_vals = [sol.u[findfirst(sol.t .>= ts)][var] * (1+(0.1rand()-0.05))
+                for var in get_dead_states(model), ts in sample_times]
+
+    total_dead_samples = map(sum, eachcol(dead_sample_vals))
+
+    df = DataFrame(
+        :times=>sample_times, 
+        :S_samples=>total_susc_samples, 
+        :I_samples=>total_inf_samples, 
+        :R_samples=>total_rec_samples,
+        :D_samples=>total_dead_samples
+    )
     CSV.write("sample_data.csv", df)
 
-    return hcat(total_inf_samples, total_rec_samples, total_susc_samples), sample_times, prob, sol
+    return hcat(total_inf_samples, total_rec_samples, total_susc_samples, total_dead_samples), sample_times, prob, sol
 end
 
 
