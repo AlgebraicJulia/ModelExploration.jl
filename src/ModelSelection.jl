@@ -140,8 +140,11 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
         susc_loss = sum(abs2, susc_vals .- susc_samples[1:size(susc_vals)[1]])
 
         rec_vals = map(sum, collect(zip([vals[i,:] for i in get_recovered_states(model)]...)))
-        rec_loss = sum(abs2, susc_vals .- rec_samples[1:size(rec_vals)[1]])
-        return susc_loss + inf_loss, sol
+        rec_loss = sum(abs2, rec_vals .- rec_samples[1:size(rec_vals)[1]])
+
+        #=dead_vals = map(sum, collect(zip([vals[i,:] for i in get_dead_states(model)]...)))
+        dead_loss = sum(abs2, dead_vals .- dead_samples[1:size(dead_vals)[1]])=#
+        return susc_loss + inf_loss + rec_loss, sol
     end
 
     callback = function (p, l, pred)
@@ -156,7 +159,7 @@ function optimise_p(model::AbstractLabelledPetriNet, op, p_init, tend, sample_da
             lower_bounds=repeat([1e-6], length(p_init)), upper_bounds=ones(length(p_init)))
 end
 
-function full_train(model, u0, tspan, training_data, sample_times, param_guess)
+#=function full_train(model, u0, tspan, training_data, sample_times, param_guess)
     rxn = MakeReactionSystem(model)
     #p_estimate = zeros(numreactionparams(rxn))
     #p_estimate = repeat([1e-6], numreactionparams(rxn)-ns(model))
@@ -188,13 +191,13 @@ function full_train(model, u0, tspan, training_data, sample_times, param_guess)
         println("Loss: $loss")
     end
     return  sol_estimate, loss
-end
+end=#
 
 function stupid()
     return "dumb"
 end
 
-function full_train(model, u0, tspan, training_data, sample_times)
+function full_train(model, u0, tspan, training_data, sample_times, name)
     rxn = MakeReactionSystem(model)
     #p_estimate = zeros(numreactionparams(rxn))
     p_estimate = repeat([1e-5], numreactionparams(rxn)-ns(model))
@@ -203,29 +206,35 @@ function full_train(model, u0, tspan, training_data, sample_times)
     loss = 0
     sol_estimate = Nothing
     # TODO: algorithmically determine this range
-    for i in 50:50:250
+    for i in 25:25:50
         res_ode = optimise_p(model, prob, p_estimate, i, training_data, sample_times)
         p_estimate = res_ode.minimizer
         sol_estimate = solve(remake(prob,tspan=tspan,p=p_estimate), Tsit5())
-        if i == 250
+        if i == 50
             susc_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_susceptible_states(model)]...)))
             rec_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_recovered_states(model)]...)))
             inf_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_infected_states(model)]...)))
+            if length(get_dead_states(model)) == 0
+                death_vals = zeros(length(susc_vals))
+            else
+                death_vals = map(sum, collect(zip([sol_estimate[i,:] for i in get_dead_states(model)]...)))
+            end
 
             df = DataFrame(
                 :times=>sol_estimate.t, 
                 :S_vals=>susc_vals, 
                 :I_vals=>inf_vals, 
-                :R_vals=>rec_vals, 
+                :R_vals=>rec_vals,
+                :D_vals=>death_vals
                 #:loss=>res_ode.minimum,
                 #:params=>p_estimate
             )
 
-            fname = string(map(string, model[:, :sname])...)
+            #fname = string(map(string, model[:, :sname])...)
 
-            CSV.write(string(fname, "_traj.csv"), df)
+            CSV.write(string(name, "_traj.csv"), df)
 	    
-	    open(string(fname, "_params.txt"), "w") do io
+	    open(string(name, "_params.txt"), "w") do io
 	        write(io, "Params: $p_estimate \nLoss: $(res_ode.minimum)")
 	    end
         end

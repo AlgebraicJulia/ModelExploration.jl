@@ -94,7 +94,17 @@ SIRSD2 = LabelledPetriNet([:S1, :I1, :R1, :D1, :S2, :I2, :R2, :D2],
     :R21 =>  (:R2=>:R1),
 )
 
-models = [SIR, SIRS, SIRD, SIRSD, SIR2, SIRS2, SIRD2, SIRSD2];
+models = [
+    (SIR, [600.0,10.0,0.0], "SIR"),
+    (SIRS, [600.0,10.0,0.0], "SIRS"), 
+    (SIRD, [600.0,10.0,0.0,0.0], "SIRD"),
+    (SIRSD, [600.0,10.0,0.0,0.0], "SIRSD"),
+    (SIR2, [400.0,10.0,0.0,200.,0.0,0.0], "SIR2"),
+    (SIRS2, [400.0,10.0,0.0,200.,0.0,0.0], "SIRS2"),
+    (SIRD2, [400.0,10.0,0.0,0.0,200.,0.0,0.0,0.0], "SIRD2"),
+    (SIRSD2, [400.0,10.0,0.0,0.0,200.,0.0,0.0,0.0], "SIRSD2")
+]
+
 tspan = (0.0, 50.0);
 #p = repeat([1e-4], 12)
 p = [.001, .002, .01, .02, .005, .01, .005, 0.01, 0.0025, .001, 0.001, 0.01];
@@ -104,7 +114,20 @@ u0 = [400.0, 10.0, 0.0, 0.0, 200.0, 0.0, 0.0, 0.0];
 true_model = SIRD2;
 sample_data, sample_times, prob, sol = generate_data(true_model, p, u0, tspan, 50);
 
-label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model))
-plot(sol; label=label)
+#label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model))
+#plot(sol; label=label)
 
+full_train(SIR, [600.0,10.0,0.0], tspan, sample_data, sample_times);
 
+function explore(models, tspan, sample_data, sample_times)
+    losses = zeros(length(models))
+    Threads.@threads for i in 1:length(models)
+      model, u0, name = models[i]
+      sol, loss = full_train(model, u0, tspan, sample_data, sample_times, name)
+      losses[i] = loss
+      println(loss)
+    end
+    return losses
+end
+
+explore(models, tspan, sample_data, sample_times)
