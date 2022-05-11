@@ -101,14 +101,27 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
 
     total_dead_samples = map(sum, eachcol(dead_sample_vals))
 
-    df = DataFrame(
+    #=df = DataFrame(
         :times=>sample_times, 
         :S_samples=>total_susc_samples, 
         :I_samples=>total_inf_samples, 
         :R_samples=>total_rec_samples,
         :D_samples=>total_dead_samples
     )
-    CSV.write("sample_data.csv", df)
+    CSV.write("sample_data.csv", df)=#
+
+    df = DataFrame(
+        :times=>sol.t
+        :S1=>sol[1]
+        :I1=>sol[2]
+        :R1=>sol[3]
+        :D1=>sol[4]
+        :S2=>sol[5]
+        :I2=>sol[6]
+        :R2=>sol[7]
+        :D2=>sol[8]
+    )
+    CSV.write("true_sol.csv", df)
 
     return hcat(total_inf_samples, total_rec_samples, total_susc_samples, total_dead_samples), sample_times, prob, sol
 end
