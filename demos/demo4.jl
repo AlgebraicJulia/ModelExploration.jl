@@ -117,7 +117,7 @@ sample_data, sample_times, prob, sol = generate_data(true_model, p, u0, tspan, 5
 #label=reshape(map(string, true_model[:, :sname]), 1, ns(true_model))
 #plot(sol; label=label)
 
-full_train(SIR, [600.0,10.0,0.0], tspan, sample_data, sample_times);
+#full_train(SIR, [600.0,10.0,0.0], tspan, sample_data, sample_times);
 
 function explore(models, tspan, sample_data, sample_times)
     losses = zeros(length(models))
@@ -130,4 +130,4 @@ function explore(models, tspan, sample_data, sample_times)
     return losses
 end
 
-explore(models, tspan, sample_data, sample_times)
+#explore(models, tspan, sample_data, sample_times)

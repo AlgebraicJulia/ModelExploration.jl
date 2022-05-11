@@ -111,15 +111,15 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
     CSV.write("sample_data.csv", df)=#
 
     df = DataFrame(
-        :times=>sol.t
-        :S1=>sol[1]
-        :I1=>sol[2]
-        :R1=>sol[3]
-        :D1=>sol[4]
-        :S2=>sol[5]
-        :I2=>sol[6]
-        :R2=>sol[7]
-        :D2=>sol[8]
+        :times=>sol.t,
+        :S1=>sol[1,:],
+        :I1=>sol[2,:],
+        :R1=>sol[3,:],
+        :D1=>sol[4,:],
+        :S2=>sol[5,:],
+        :I2=>sol[6,:],
+        :R2=>sol[7,:],
+        :D2=>sol[8,:]
     )
     CSV.write("true_sol.csv", df)
 
