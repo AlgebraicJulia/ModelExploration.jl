@@ -45,7 +45,7 @@ sviir_rxn = ReactionSystem(SVIIR)
 
 prob = ODEProblem(sviir_rxn, concentrations(model), (0.0,150.0), vcat(rates(model), concentrations(model)))
 
-state_data = CSV.read("test/georgia.csv", DataFrame)
+state_data = CSV.read("data/georgia.csv", DataFrame)
 
 times = 1:(length(state_data[:, :date])-1)
 data = state_data[2:end, :cases] .- state_data[1:(end-1), :cases];

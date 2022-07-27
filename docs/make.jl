@@ -1,24 +1,24 @@
 using Documenter
-using AlgebraicRewriting
+using ModelExploration
 
 # Set Literate.jl config if not being compiled on recognized service.
 config = Dict{String,String}()
 if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
-  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/AlgebraicRewriting.jl/blob/gh-pages/dev"
-  config["repo_root_url"] = "https://github.com/AlgebraicJulia/AlgebraicRewriting.jl/blob/main/docs"
+  config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/kris-browns/ModelExploration.jl/blob/gh-pages/dev"
+  config["repo_root_url"] = "https://github.com/kris-browns/ModelExploration.jl/blob/main/docs"
 end
 
 makedocs(
-    sitename = "AlgebraicRewriting",
+    sitename = "ModelExploration",
     format = Documenter.HTML(),
-    modules = [AlgebraicRewriting]
+    modules = [ModelExploration]
 )
 
 
 @info "Deploying docs"
 deploydocs(
   target = "build",
-  repo   = "github.com/AlgebraicJulia/AlgebraicRewriting.jl.git",
+  repo   = "github.com/kris-browns/ModelExploration.jl.git",
   branch = "gh-pages",
   devbranch = "main"
 )

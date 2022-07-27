@@ -1,6 +1,5 @@
-# using ModelExploration
-include("../src/Slice.jl")
-include("../src/ModelExploration.jl")
+module TestPetri
+using ModelExploration
 
 import AlgebraicPetri
 using Test
@@ -61,3 +60,4 @@ data = DataSet(path)
 exp.run(data)
 
 
+end # module

@@ -1,3 +1,4 @@
+module TestModelExploration
 using Revise
 using AlgebraicPetri
 using OrdinaryDiffEq
@@ -26,3 +27,5 @@ plot!(predicted_traj; xaxis="days")
 f = eval_petri_fn(SIR, true_rates, initial_conc)
 v1= f(SIR)
 v2 = f(SIR2)
+
+end # module
