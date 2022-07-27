@@ -1,4 +1,5 @@
-# ModelExploration.jl
+# # ![Logo](docs/src/assets/logo.png)  ModelExploration.jl [![Documentation](https://github.com/kris-brown/ModelExploration.jl/workflows/Documentation/badge.svg)](https://kris-brown.github.io/ModelExploration.jl/dev/)
+![Tests](https://github.com/kris-brown/ModelExploration.jl/workflows/Tests/badge.svg)
 Leveraging AlgebraicJulia to provide an interface for scientists to explore spaces of models.
 
 ## Basic idea
