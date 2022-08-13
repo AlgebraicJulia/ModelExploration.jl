@@ -1,6 +1,7 @@
 using DataFrames
 using CSV
 using Plots; plotlyjs()
+#using PlotlyJS
 using AlgebraicPetri
 theme(:ggplot2)
 
@@ -64,8 +65,41 @@ mnames = [
     "SIRSD", "SIRSD 2-City"
 ]
 
-plts = map(x->make_traj_plot(sample_df, x...), zip(fnames, mnames))
-scalefontsizes(2.5)
-display.(plts)
+#plts = map(x->make_traj_plot(sample_df, x...), zip(fnames, mnames))
+#scalefontsizes(2.5)
+#display.(plts)
 
+sol_df = CSV.read("true_sol.csv", DataFrame)
 
+times = sol_df.times
+S1 = sol_df.S1
+I1 = sol_df.I1
+R1 = sol_df.R1
+D1 = sol_df.D1
+S2 = sol_df.S2
+I2 = sol_df.I2
+R2 = sol_df.R2
+D2 = sol_df.D2
+
+vals = hcat(S1,I1,R1,D1,S2,R2,I2,D2)
+
+sample_times = sample_df.times
+samples = hcat(eachcol(sample_df)[2:end]...)
+
+plt = plot(times, vals,
+    lw=2,
+    label=["S1" "I1" "R1" "D1" "S2" "I2" "R2" "D2"],
+    title="SIRD 2-City True Model",
+    titlefontsize=30,
+    xlabel="Time",
+    ylabel="People",
+    legend_font_family=f,
+    legend_font_pointsize=20,
+    fontfamily=f
+)
+
+scatter!(sample_times, samples, label="", markersize=2.5)
+
+#scalefontsizes(2.5)
+
+display(plt)

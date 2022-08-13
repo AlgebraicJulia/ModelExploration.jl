@@ -123,6 +123,19 @@ function generate_data(model::AbstractLabelledPetriNet, p, u0, tspan, num_sample
     )
     CSV.write("true_sol.csv", df)
 
+    df2 = DataFrame(
+        :times=>sample_times,
+        :S1_samples=>susc_sample_vals[1,:],
+        :I1_samples=>inf_sample_vals[1,:],
+        :R1_samples=>rec_sample_vals[1,:],
+        :D1_samples=>dead_sample_vals[1,:],
+        :S2_samples=>susc_sample_vals[2,:],
+        :I2_samples=>inf_sample_vals[2,:],
+        :R2_samples=>rec_sample_vals[2,:],
+        :D2_samples=>dead_sample_vals[2,:]
+    )
+    CSV.write("sample_data.csv", df)
+
     return hcat(total_inf_samples, total_rec_samples, total_susc_samples, total_dead_samples), sample_times, prob, sol
 end
 
