@@ -2,9 +2,9 @@ using Revise
 using Test
 using ModelExploration
 using Catlab.CategoricalAlgebra, Catlab.Present, Catlab.Theories
-using Plots; unicodeplots()
+using Plots
 #include("../src/Petri.jl")
-include("../src/ModelSelection.jl")
+include("../examples/PetriModelSelection.jl")
 using AlgebraicPetri: LabelledPetriNetUntyped
 
 
