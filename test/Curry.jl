@@ -5,6 +5,7 @@ using Catlab.CategoricalAlgebra
 using Catlab.CSetDataStructures: AnonACSetType
 using Catlab.Graphs
 using Catlab.Present
+using Catlab.Theories
 using ModelExploration.Curry
 
 # FinFunctors
