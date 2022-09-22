@@ -1,7 +1,7 @@
 module Misc
 
 using Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra: IdentityFunction
+using Catlab.CategoricalAlgebra.Sets: IdentityFunction
 import Catlab.CategoricalAlgebra: limit, universal
 using Catlab.Present
 import Base: hash
