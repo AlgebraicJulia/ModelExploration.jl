@@ -4,6 +4,7 @@ using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.Sets: IdentityFunction
 import Catlab.CategoricalAlgebra: limit, universal
 using Catlab.Present
+using Catlab.Theories
 import Base: hash
 
 function limit(ps::ParallelMorphisms{<:TypeSet})
