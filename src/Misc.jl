@@ -3,9 +3,14 @@ module Misc
 using Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.Sets: IdentityFunction
 import Catlab.CategoricalAlgebra: limit, universal
+import Catlab.CategoricalAlgebra.Categories: is_hom_equal
 using Catlab.Present
 using Catlab.Theories
 import Base: hash
+
+
+is_hom_equal(f::ACSetTransformation, g::ACSetTransformation) =
+  force(f) == force(g)
 
 function limit(ps::ParallelMorphisms{<:TypeSet})
     err = "equalizers of TypeSets that are not identity not supported"
@@ -13,7 +18,7 @@ function limit(ps::ParallelMorphisms{<:TypeSet})
     d = dom(ps)
     Limit(ps, Multispan(d, [IdentityFunction(d, d)]))
   end
-  
+
 universal(ps::Equalizer{<:TypeSet}, span::Multispan) = only(span) ⋅ incl(ps)
 
 Base.hash(pres::Presentation{T,N}, h::UInt) where {T,N} =

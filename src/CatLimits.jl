@@ -1,4 +1,5 @@
 module CatLimits
+export is_natural_verbose
 
 using StructEquality
 using DataStructures: IntDisjointSets, find_root!
@@ -10,7 +11,7 @@ using Catlab.CategoricalAlgebra
 import Catlab.CategoricalAlgebra.FinCats: FinCatPresentation
 import Catlab.CategoricalAlgebra: ob_map, hom_map, presentation, ob_generators, hom_generators, equations,
   ob_generator, hom_generator, ob_generator_name, hom_generator_name, ob, hom, product, coproduct,
-  equalizer, coequalizer, universal, is_natural
+  equalizer, coequalizer, universal
 import Catlab.Theories: dom, codom, compose, id
 
 src(C::FinCatGraph, i::Int) = src(graph(C), i)
@@ -20,8 +21,7 @@ ob_map(F::FinDomFunctor) = Dict([k=>ob_map(F,k) for k in ob_generators(dom(F))])
 hom_map(F::FinDomFunctor) = Dict([
   k=>hom_map(F,k) for k in hom_generators(dom(F))])
 
-function is_natural(α::FinTransformation; check_equations::Bool=true,
-                    verbose::Bool=false)
+function is_natural_verbose(α::FinTransformation; check_equations::Bool=true)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
   all(ob_generators(C)) do c

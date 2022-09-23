@@ -43,7 +43,7 @@ I = @acset School′ begin
 end
 
 #lk = leftkan(F, I, :School)
-## @test is_natural(lk)
+#@test is_natural(lk)
 
 expected = @acset School begin
   TA = 2; Student = 4; Faculty = 5; Person = 7
@@ -120,7 +120,7 @@ lk3 = diagram(codom(lk3_))
 otherF = FinDomFunctor(Dict(:Y=>two), Dict(:f => id(two)), Inv, Grph())
 otherD = DiagramHom(F, Dict(:X=>id(two)), Diagram(I), Diagram(otherF))
 phi = lk_universal(lk3_, otherD)
-# @test is_natural(phi)
+@test is_natural(phi)
 
 # Limits of diagrams
 #########################
@@ -255,14 +255,14 @@ pb = pullback(Multicospan([G_AAg1,H_CAg1]));
 
 map([p1, p2, e1, e2, pb]) do lim
   @test is_functorial(diagram(apex(lim)))
-  # @test all(is_natural.(legs(lim)))
+  @test all(is_natural.(legs(lim)))
 end
 
 u = universal(p2, Multispan([AL1, AL2]))
-# @test is_natural(u)
+@test is_natural(u)
 
 u = factorize(e1, AA_02)
-# @test is_natural(u)
+@test is_natural(u)
 
 # Limits(op)
 #-----------
@@ -274,11 +274,11 @@ p2 = product(Diagram{op}.([AG_g1, CG_g1t1ar, AG_g12, CG_g1, CG_t1ar]));
 
 map([p1, p2]) do lim
   @test is_functorial(diagram(apex(lim)))
-  # @test all(is_natural.(legs(lim)))
+  @test all(is_natural.(legs(lim)))
 end
 
 u = universal(p1, Multispan([ALop1, ALop2]))
-# @test is_natural(u)
+@test is_natural(u)
 
 # Colimits
 #----------
@@ -318,11 +318,11 @@ expected_a2 = @acset Graph begin V=3;E=4; src=[1,2,2,3]; tgt=[2,2,3,3] end
 
 map([cp1, cp2, ceq, po, po2]) do clim
   @test is_functorial(diagram(apex(clim)))
-  # @test all(is_natural.(legs(clim)))
+  @test all(is_natural.(legs(clim)))
 end
 
 u = universal(cp1, Multicospan([F_2,CC1]))
-# @test is_natural(u)
+@test is_natural(u)
 
 # Colimits(op)
 #------------
@@ -333,14 +333,14 @@ po = pushout(Multispan([ALop1, ALop2]));
 
 map([cp1, cp2, ce, po]) do clim
   @test is_functorial(diagram(apex(clim)))
-  # @test all(is_natural.(legs(clim)))
+  @test all(is_natural.(legs(clim)))
 end
 
 u = universal(cp1, Multicospan([ALop3, ALop2]))
-# @test is_natural(u)
+@test is_natural(u)
 
 u = factorize(ce, Qop)
-# @test is_natural(u)
+@test is_natural(u)
 
 
 end
