@@ -5,8 +5,8 @@ export uncurry, ACSetCat
 using DataStructures
 using Catlab.CategoricalAlgebra
 using Catlab.Present
-import Catlab.CategoricalAlgebra: FinDomFunctor, do_ob_map, do_hom_map
-import Catlab.CategoricalAlgebra.FinCats: FinTransformationMap
+import Catlab.CategoricalAlgebra.FinCats: FinTransformationMap, FinDomFunctor
+import Catlab.CategoricalAlgebra.Categories: do_ob_map, do_hom_map
 using AutoHashEquals
 using ..CatLimits
 import ..CatLimits: product, ob_map, hom_map
@@ -22,7 +22,7 @@ const ACSetDomCat = FinCats.FinCatPresentation{
   eqs::Vector{Pair}
 end
 
-FinDomFunctor(X::ACSet; eqs=Pair[]) = ACSetFunctorEq(X, eqs)
+FinDomFunctor(X::ACSet; eqs=Pair[]) = ACSetFunctorEq(X, eqs) # WARNING overwrite Catlab method. This really should be upstreamed.
 
 function dom(F::ACSetFunctorEq)
     p = Presentation(F.acset)
@@ -33,24 +33,21 @@ function dom(F::ACSetFunctorEq)
 end
 codom(F::ACSetFunctorEq) = TypeCat{SetOb,FinDomFunction{Int}}()
 
-Categories.do_ob_map(F::ACSetFunctorEq, x) = SetOb(F.acset, Symbol(x))
-Categories.do_hom_map(F::ACSetFunctorEq, f) = SetFunction(F.acset, Symbol(f))
+do_ob_map(F::ACSetFunctorEq, x) = SetOb(F.acset, Symbol(x))
+do_hom_map(F::ACSetFunctorEq, f) = SetFunction(F.acset, Symbol(f))
 
 function (C::Type{ACS})(F::FinTransformationMap) where ACS <: ACSet
     Cd, CCd = C(dom(F)), C(codom(F))
     return CSetTransformation(Cd, CCd; components(F)...)
 end
-  
-  
+
+
 FinTransformationMap(f::ACSetTransformation; eqs=Pair[]) =
   FinTransformationMap(components(f),
                       FinDomFunctor(dom(f); eqs=eqs),
                       FinDomFunctor(codom(f); eqs=eqs)
 )
 
-                      
-is_hom_equal(f::ACSetTransformation, g::ACSetTransformation) =
-  force(f) == force(g)
 
 # Tensor-hom adjunction (currying of diagrams in C-Set)
 #######################################################

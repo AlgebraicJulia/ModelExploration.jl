@@ -16,7 +16,7 @@ using ..Misc
 using AutoHashEquals
 
 is_natural(D::DiagramHom; verbose::Bool=false) =
-    is_functorial(shape_map(D)) && is_natural(diagram_map(D); verbose=verbose)
+    is_functorial(shape_map(D)) && (verbose ? is_natural_verbose(diagram_map(D)) : is_natural(diagram_map(D)))
 
 # Left Kan extensions of Diagrams in Set or C-set along FinFunctors
 ################################################################
