@@ -1,8 +1,11 @@
 module Misc
 
-using Catlab.CategoricalAlgebra, Catlab.Present
+using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.Sets: IdentityFunction
 import Catlab.CategoricalAlgebra: limit, universal
 import Catlab.CategoricalAlgebra.Categories: is_hom_equal
+using Catlab.Present
+using Catlab.Theories
 import Base: hash
 
 
